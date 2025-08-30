@@ -262,7 +262,7 @@ from instagram_scraper import run_instagram_scraper
 from x_scraper import run_x_scraper
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'  # Change this in production
+app.secret_key = 'Flask@7867'  # Change this in production
 
 # Dictionary to store scraping status for each user session
 user_sessions = {}
