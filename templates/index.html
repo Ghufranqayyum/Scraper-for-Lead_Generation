@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Social Media Data Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f17 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 15, 25, 0.95);
+            border-right: 1px solid rgba(0, 255, 65, 0.2);
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 20px 30px;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00ff41;
+            margin-bottom: 5px;
+        }
+
+        .logo .version {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .platform-btn {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .platform-btn:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .platform-btn.active {
+            background: rgba(0, 255, 65, 0.2);
+            border-left: 4px solid #00ff41;
+        }
+
+        .platform-btn .icon {
+            font-size: 20px;
+            color: #00ff41;
+            margin-right: 12px;
+            width: 30px;
+        }
+
+        .platform-btn .text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .intro-text {
+            font-size: 11px;
+            color: #ffffff;
+            line-height: 1.4;
+            background: rgba(0, 150, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            margin: 15px 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 30px;
+            position: relative;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(15, 15, 25, 1.0) 0%, rgba(20, 30, 45, 0.9) 30%, rgba(25, 40, 60, 0.8) 70%, rgba(15, 15, 25, 1.0) 100%);
+            border-radius: 15px;
+            padding: 50px;
+        }
+
+        .welcome-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #00ff41;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+        }
+
+        .features-list {
+            font-size: 16px;
+            color: #ffffff;
+            line-height: 2.0;
+            background: rgba(0, 255, 65, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .instruction {
+            font-size: 14px;
+            color: #00ff41;
+            background: rgba(0, 255, 65, 0.1);
+            padding: 15px 25px;
+            border-radius: 25px;
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            margin-top: 30px;
+        }
+
+        /* Workflow Screen */
+        .workflow-screen {
+            display: none;
+        }
+
+        .steps-indicator {
+            background: rgba(0, 255, 65, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            padding: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+        }
+
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .step.active .step-circle,
+        .step.completed .step-circle {
+            background: #00ff41;
+            color: #000000;
+        }
+
+        .step:not(.active):not(.completed) .step-circle {
+            background: rgba(160, 160, 160, 0.2);
+            color: #a0a0a0;
+        }
+
+        .step-title {
+            font-size: 14px;
+            margin-right: 20px;
+        }
+
+        .step.active .step-title,
+        .step.completed .step-title {
+            color: #00ff41;
+            font-weight: 600;
+        }
+
+        .step:not(.active):not(.completed) .step-title {
+            color: #a0a0a0;
+        }
+
+        .step-connector {
+            width: 40px;
+            height: 2px;
+            background: rgba(0, 255, 65, 0.3);
+            margin: 0 10px;
+        }
+
+        /* Form Styles */
+        .form-section {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            color: #00ff41;
+            font-weight: 600;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            background: rgba(20, 20, 35, 0.9);
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px 18px;
+            font-size: 14px;
+            color: #ffffff;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #00ff41;
+            background: rgba(20, 20, 35, 1.0);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        }
+
+        .form-input:hover {
+            border-color: #39ff14;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: rgba(160, 160, 160, 0.7);
+            font-style: italic;
+        }
+
+        /* Modern Button */
+        .modern-btn {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.1) 0%, rgba(0, 255, 65, 0.2) 100%);
+            color: #00ff41;
+            border: 2px solid #00ff41;
+            border-radius: 12px;
+            padding: 12px 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modern-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.3) 0%, rgba(0, 255, 65, 0.4) 100%);
+            color: #ffffff;
+            border-color: #39ff14;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .modern-btn:active {
+            transform: translateY(0px);
+        }
+
+        .modern-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modern-btn.secondary {
+            color: #6b7280;
+            border-color: #6b7280;
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.2) 100%);
+        }
+
+        .modern-btn.secondary:hover {
+            color: #ffffff;
+            border-color: #4b5563;
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.3) 0%, rgba(75, 85, 99, 0.4) 100%);
+        }
+
+        .modern-btn.danger {
+            color: #ff4757;
+            border-color: #ff4757;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 71, 87, 0.2) 100%);
+        }
+
+        .modern-btn.danger:hover {
+            color: #ffffff;
+            border-color: #ff3838;
+            background: linear-gradient(135deg, rgba(255, 56, 56, 0.3) 0%, rgba(255, 56, 56, 0.4) 100%);
+        }
+
+        .modern-btn.purple {
+            color: #6c5ce7;
+            border-color: #6c5ce7;
+            background: linear-gradient(135deg, rgba(108, 92, 231, 0.1) 0%, rgba(108, 92, 231, 0.2) 100%);
+        }
+
+        .modern-btn.purple:hover {
+            color: #ffffff;
+            border-color: #5f3dc4;
+            background: linear-gradient(135deg, rgba(95, 61, 196, 0.3) 0%, rgba(95, 61, 196, 0.4) 100%);
+        }
+
+        /* Processing Screen */
+        .processing-screen {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .processing-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .processing-subtitle {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 30px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff41 0%, #39ff14 50%, #7fff00 100%);
+            border-radius: 10px;
+            width: 30%;
+            transition: width 0.5s ease;
+        }
+
+        .status-text {
+            color: #00ff41;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        /* Results Screen */
+        .results-screen {
+            display: none;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .results-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #39ff14;
+            margin-bottom: 10px;
+        }
+
+        .results-subtitle {
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+
+        .file-info {
+            background: rgba(0, 255, 65, 0.1);
+            color: #00ff41;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .action-buttons .modern-btn:last-child {
+            grid-column: 1 / -1;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00ff41;
+        }
+
+        .close {
+            color: #a0a0a0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #ffffff;
+        }
+
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(20, 20, 35, 0.9);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: rgba(0, 255, 65, 0.2);
+            color: #00ff41;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.1);
+            color: #ffffff;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        /* Email Info */
+        .email-info {
+            background: rgba(255, 165, 0, 0.1);
+            color: #ffa500;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            font-size: 14px;
+            margin: 15px 0;
+            line-height: 1.4;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>🤖 AI Extractor</h1>
+                <div class="version">Professional v3.0</div>
+            </div>
+
+            <button class="platform-btn" onclick="selectPlatform('facebook', 'Facebook')">
+                <span class="icon">📘</span>
+                <span class="text">Facebook</span>
+            </button>
+
+            <button class="platform-btn" onclick="selectPlatform('instagram', 'Instagram')">
+                <span class="icon">📸</span>
+                <span class="text">Instagram</span>
+            </button>
+
+            <button class="platform-btn" onclick="selectPlatform('twitter', 'Twitter/X')">
+                <span class="icon">✖️</span>
+                <span class="text">Twitter/X</span>
+            </button>
+
+            <div class="intro-text">
+                <strong>What is Lead Generation & Data Scraping?</strong><br><br>
+
+                Lead generation through social media scraping involves extracting valuable contact information, business data, and user insights from social platforms. This powerful technique helps businesses:<br><br>
+
+                • Identify potential customers and their preferences<br>
+                • Gather market intelligence and competitor analysis<br>
+                • Build targeted marketing campaigns with real data<br>
+                • Extract contact information for sales outreach<br>
+                • Analyze trends and user behavior patterns<br><br>
+
+                Our AI-powered platform automates this process across multiple social media platforms, ensuring efficient and accurate data collection for your business growth.
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <h1 class="welcome-title">AI Data Extraction Platform</h1>
+                <p class="welcome-subtitle">Advanced Social Media Intelligence Platform</p>
+
+                <div class="features-list">
+                    • Real-time Data Extraction<br>
+                    • Advanced AI Processing<br>
+                    • Multi-Platform Support<br>
+                    • Secure Data Handling<br>
+                    • Professional Analytics
+                </div>
+
+                <div class="instruction">Select a platform from the sidebar to begin data extraction</div>
+            </div>
+
+            <!-- Workflow Screen -->
+            <div class="workflow-screen" id="workflowScreen">
+                <!-- Steps Indicator -->
+                <div class="steps-indicator">
+                    <div class="step active" id="step1">
+                        <div class="step-circle">1</div>
+                        <div class="step-title">Configuration</div>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step" id="step2">
+                        <div class="step-circle">2</div>
+                        <div class="step-title">Processing</div>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step" id="step3">
+                        <div class="step-circle">3</div>
+                        <div class="step-title">Results</div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="form-section" id="configSection">
+                    <h2 class="form-title" id="configTitle">Platform Data Extraction Configuration</h2>
+                    <p class="form-subtitle">Configure extraction parameters</p>
+
+                    <div class="form-group">
+                        <label class="form-label" id="targetLabel">Target URL/Page/Hashtag</label>
+                        <input type="text" class="form-input" id="targetInput" placeholder="Enter target...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Number of Scrolls/Limit</label>
+                        <input type="number" class="form-input" id="limitInput" placeholder="10" value="10">
+                    </div>
+
+                    <div style="text-align: right; margin-top: 30px;">
+                        <button class="modern-btn" onclick="startExtraction()" id="startBtn">Start Extraction</button>
+                    </div>
+                </div>
+
+                <!-- Processing Section -->
+                <div class="processing-screen" id="processingSection">
+                    <h2 class="processing-title">Processing Data</h2>
+                    <p class="processing-subtitle">AI algorithms are extracting and processing data...</p>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+
+                    <div class="status-text" id="statusText">Scraping in process</div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="results-screen" id="resultsSection">
+                    <div class="results-header">
+                        <h2 class="results-title">Extraction Complete</h2>
+                        <p class="results-subtitle" id="resultsSubtitle">Successfully extracted data</p>
+                    </div>
+
+                    <div class="file-info" id="fileInfo">📄 File: extracted_data.csv</div>
+
+                    <div class="action-buttons">
+                        <button class="modern-btn" onclick="viewData()">📊 View Data</button>
+                        <button class="modern-btn" onclick="downloadCSV()">💾 Download CSV</button>
+                        <button class="modern-btn purple" onclick="showEmailModal()">📧 Email Results</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Viewer Modal -->
+    <div class="modal" id="dataModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📊 Data Viewer</h2>
+                <span class="close" onclick="closeModal('dataModal')">&times;</span>
+            </div>
+            <div id="dataTableContainer"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="modern-btn danger" onclick="closeModal('dataModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Configuration Modal -->
+    <div class="modal" id="emailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📧 Email Configuration</h2>
+                <span class="close" onclick="closeModal('emailModal')">&times;</span>
+            </div>
+
+            <div class="email-info">
+                💡 To send result via email activate your 2-step-verification and generate your App-password. Use App password instead of your gmail password.
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Your Email:</label>
+                <input type="email" class="form-input" id="senderEmail" placeholder="your.email@gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Your Password:</label>
+                <input type="password" class="form-input" id="senderPassword" placeholder="Your email password">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Recipient Email:</label>
+                <input type="email" class="form-input" id="recipientEmail" placeholder="recipient@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">SMTP Server:</label>
+                <input type="text" class="form-input" id="smtpServer" value="smtp.gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">SMTP Port:</label>
+                <input type="number" class="form-input" id="smtpPort" value="587">
+            </div>
+
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <button class="modern-btn secondary" onclick="closeModal('emailModal')">Cancel</button>
+                <button class="modern-btn" onclick="sendEmail()">Send Email</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlatform = null;
+        let currentPlatformName = null;
+        let statusCheckInterval = null;
+
+        function selectPlatform(platform, platformName) {
+            // Update sidebar button states
+            document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.platform-btn').classList.add('active');
+
+            currentPlatform = platform;
+            currentPlatformName = platformName;
+
+            // Update configuration form based on platform
+            updateConfigurationForm(platform, platformName);
+
+            // Show workflow screen
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('workflowScreen').style.display = 'block';
+
+            // Reset to configuration step
+            showConfigurationStep();
+        }
+
+        function updateConfigurationForm(platform, platformName) {
+            document.getElementById('configTitle').textContent = `${platformName} Data Extraction Configuration`;
+
+            const targetLabel = document.getElementById('targetLabel');
+            const targetInput = document.getElementById('targetInput');
+
+            if (platform === 'facebook') {
+                targetLabel.textContent = 'Facebook Page URL';
+                targetInput.placeholder = 'https://facebook.com/page-name';
+            } else {
+                targetLabel.textContent = 'Hashtag';
+                targetInput.placeholder = 'hashtag (without #)';
+            }
+        }
+
+        function showConfigurationStep() {
+            // Update steps
+            updateSteps(1);
+
+            // Show configuration section
+            document.getElementById('configSection').style.display = 'block';
+            document.getElementById('processingSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+        }
+
+        function updateSteps(currentStep) {
+            const steps = ['step1', 'step2', 'step3'];
+
+            steps.forEach((stepId, index) => {
+                const step = document.getElementById(stepId);
+                const circle = step.querySelector('.step-circle');
+                const title = step.querySelector('.step-title');
+
+                step.classList.remove('active', 'completed');
+
+                if (index + 1 < currentStep) {
+                    // Completed step
+                    step.classList.add('completed');
+                    circle.textContent = '✓';
+                } else if (index + 1 === currentStep) {
+                    // Active step
+                    step.classList.add('active');
+                    circle.textContent = index + 1;
+                } else {
+                    // Future step
+                    circle.textContent = index + 1;
+                }
+            });
+        }
+
+        function startExtraction() {
+            const target = document.getElementById('targetInput').value.trim();
+            const limit = parseInt(document.getElementById('limitInput').value) || 10;
+
+            if (!target) {
+                alert('Please fill in the target field.');
+                return;
+            }
+
+            if (limit <= 0) {
+                alert('Limit must be a positive number.');
+                return;
+            }
+
+            // Update UI to processing step
+            updateSteps(2);
+            document.getElementById('configSection').style.display = 'none';
+            document.getElementById('processingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+
+            // Update progress bar
+            document.getElementById('progressFill').style.width = '30%';
+            document.getElementById('statusText').textContent = 'Scraping in process';
+
+            // Start extraction
+            fetch('/start_scraping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platform: currentPlatform,
+                    target: target,
+                    limit: limit
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Start checking status
+                    statusCheckInterval = setInterval(checkStatus, 2000);
+                } else {
+                    alert('Error: ' + data.error);
+                    showConfigurationStep();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to start extraction');
+                showConfigurationStep();
+            });
+        }
+
+        function checkStatus() {
+            fetch('/get_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    clearInterval(statusCheckInterval);
+                    showResults(data);
+                } else if (data.status === 'error') {
+                    clearInterval(statusCheckInterval);
+                    alert('Error: ' + data.message);
+                    showConfigurationStep();
+                } else {
+                    // Update progress
+                    document.getElementById('statusText').textContent = data.message;
+                    document.getElementById('progressFill').style.width = '60%';
+                }
+            })
+            .catch(error => {
+                console.error('Status check error:', error);
+            });
+        }
+
+        function showResults(data) {
+            // Update steps
+            updateSteps(3);
+
+            // Update UI
+            document.getElementById('processingSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Update progress to 100%
+            document.getElementById('progressFill').style.width = '100%';
+
+            // Update results info
+            document.getElementById('resultsSubtitle').textContent =
+                `Successfully extracted ${data.record_count} records from ${currentPlatformName}`;
+
+            if (data.csv_file) {
+                const filename = data.csv_file.split('/').pop() || 'extracted_data.csv';
+                document.getElementById('fileInfo').textContent = `📄 File: ${filename}`;
+            }
+        }
+
+        function viewData() {
+            fetch('/view_data')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayDataTable(data.headers, data.rows);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to load data');
+            });
+        }
+
+        function displayDataTable(headers, rows) {
+            const container = document.getElementById('dataTableContainer');
+
+            let tableHTML = '<table class="data-table">';
+
+            // Headers
+            if (headers && headers.length > 0) {
+                tableHTML += '<thead><tr>';
+                headers.forEach(header => {
+                    tableHTML += `<th>${escapeHtml(header)}</th>`;
+                });
+                tableHTML += '</tr></thead>';
+            }
+
+            // Rows
+            tableHTML += '<tbody>';
+            if (rows && rows.length > 0) {
+                rows.slice(0, 100).forEach(row => {  // Limit to first 100 rows for performance
+                    tableHTML += '<tr>';
+                    row.forEach(cell => {
+                        tableHTML += `<td>${escapeHtml(String(cell))}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+
+                if (rows.length > 100) {
+                    tableHTML += `<tr><td colspan="${headers.length}" style="text-align: center; font-style: italic; color: #a0a0a0;">... and ${rows.length - 100} more rows</td></tr>`;
+                }
+            } else {
+                tableHTML += `<tr><td colspan="${headers.length}" style="text-align: center; color: #a0a0a0;">No data available</td></tr>`;
+            }
+            tableHTML += '</tbody></table>';
+
+            container.innerHTML = tableHTML;
+            document.getElementById('dataModal').style.display = 'block';
+        }
+
+        function downloadCSV() {
+            window.location.href = '/download_csv';
+        }
+
+        function showEmailModal() {
+            document.getElementById('emailModal').style.display = 'block';
+        }
+
+        function sendEmail() {
+            const senderEmail = document.getElementById('senderEmail').value.trim();
+            const senderPassword = document.getElementById('senderPassword').value.trim();
+            const recipientEmail = document.getElementById('recipientEmail').value.trim();
+            const smtpServer = document.getElementById('smtpServer').value.trim();
+            const smtpPort = parseInt(document.getElementById('smtpPort').value) || 587;
+
+            if (!senderEmail || !senderPassword || !recipientEmail) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            fetch('/send_email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sender_email: senderEmail,
+                    sender_password: senderPassword,
+                    recipient_email: recipientEmail,
+                    smtp_server: smtpServer,
+                    smtp_port: smtpPort
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Email is being sent!');
+                    closeModal('emailModal');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send email');
+            });
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

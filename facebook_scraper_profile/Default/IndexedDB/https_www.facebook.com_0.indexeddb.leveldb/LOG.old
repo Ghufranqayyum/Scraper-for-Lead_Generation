@@ -1,0 +1,6 @@
+2025/08/30-12:52:31.306 1c1c Creating DB C:\Users\ABC\machinelear\DeppLearning\Scrapers_GUI\facebook_scraper_profile\Default\IndexedDB\https_www.facebook.com_0.indexeddb.leveldb since it was missing.
+2025/08/30-12:52:31.319 1c1c Reusing MANIFEST C:\Users\ABC\machinelear\DeppLearning\Scrapers_GUI\facebook_scraper_profile\Default\IndexedDB\https_www.facebook.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/08/30-12:52:34.143 1c1c Level-0 table #5: started
+2025/08/30-12:52:34.149 1c1c Level-0 table #5: 15075 bytes OK
+2025/08/30-12:52:34.154 1c1c Delete type=0 #3
+2025/08/30-12:52:34.156 1c1c Manual compaction at level-0 from '\x00\x07\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x08\x00\x00\x00' @ 0 : 0; will stop at (end)
