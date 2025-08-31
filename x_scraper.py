@@ -40,6 +40,7 @@ import sqlite3
 import shutil
 import threading
 profile_lock = threading.Lock()
+import csv
 
 
 def start_driver(headless=True, user_session=None):
@@ -191,7 +192,6 @@ def create_minimal_profile(user_profile_dir):
 
 
 def create_isolated_browser(user_profile_dir, headless, session_id):
-   def create_isolated_browser(user_profile_dir, headless, session_id):
     options = Options()
     if headless:
         options.add_argument("--headless=new")
@@ -239,55 +239,39 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
 
 
 def check_login_status(driver):
-
-    """
-    Check if successfully logged into Instagram
-    """
     try:
         time.sleep(2)
         current_url = driver.current_url.lower()
         page_source = driver.page_source.lower()
 
-        # Login page indicators
+        # X/Twitter login page indicators
         login_indicators = [
-            'accounts/login',
-            'accounts/signup',
-            'login/?source',
-            'sign up',
-            'log in',
-            'loginform'
+            'i/flow/login',
+            'login',
+            'signup',
+            'enter your phone'
         ]
 
-        # Logged in indicators
+        # X/Twitter logged in indicators
         logged_in_indicators = [
-            '{"config":',  # Instagram's config object (logged in)
-            'window._shareddata',  # Shared data (logged in)
-            '"viewer":{"id":"',  # User ID in page data
-            'direct/inbox',
-            'explore/people'
+            '"screen_name"',
+            'compose/tweet',
+            'home',
+            'notifications'
         ]
 
         is_login_page = any(indicator in current_url for indicator in login_indicators)
         has_logged_in_data = any(indicator in page_source for indicator in logged_in_indicators)
 
         if has_logged_in_data and not is_login_page:
-            print("🎉 Successfully logged in using copied profile!")
+            print("Successfully logged in!")
             return True
-        elif is_login_page:
-            print("❌ Redirected to login page - cookies may have expired")
-            return False
         else:
-            print("⚠️ Login status unclear - checking page elements...")
-            # Additional check for navigation elements
-            nav_elements = ['search & explore', 'create', 'reels', 'messages']
-            if any(element in page_source for element in nav_elements):
-                print("✅ Detected navigation elements - likely logged in")
-                return True
-
+            print("Not logged in - profile authentication failed")
             return False
 
     except Exception as e:
-        print(f"❌ Error checking login: {e}")
+        print(f"Error checking login: {e}")
         return False
 
 
@@ -597,6 +581,12 @@ def scrape_hashtag(hashtag,scroll):
     print(f"📌 Scraping hashtag: #{hashtag}")
     driver,session = start_driver(headless=True)
     #driver.get("https://x.com/login")
+    if not check_login_status(driver):
+        print("Authentication failed - profile didn't work on Railway")
+        driver.quit()
+        cleanup_user_session(session)
+        raise Exception("Authentication required - please log in manually")
+    
     time.sleep(10)
     import time
     import os
