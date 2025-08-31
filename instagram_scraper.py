@@ -10,7 +10,6 @@ import uuid
 import time
 import sqlite3
 import shutil
-import pandas as pd
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -508,15 +507,23 @@ def extract_info_from_post(driver, post_url):
     }
 
 
+# Remove: import pandas as pd
+
 def save_to_csv(data):
-    df = pd.DataFrame(data)
     filename = "insta_leads.csv"
     counter = 1
     while os.path.exists(filename):
         filename = f"insta_leads_{counter}.csv"
         counter += 1
-    df.to_csv(filename, index=False)
-    print(f"📁 Saved to: {filename}")
+    
+    # Replace pandas with standard CSV
+    with open(filename, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if data:
+            writer.writerow(data[0].keys())  # Headers
+            for row in data:
+                writer.writerow(row.values())
+    
     return filename
 
 
