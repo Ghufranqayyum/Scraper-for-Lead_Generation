@@ -17,10 +17,15 @@ RUN wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor 
 RUN apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*
 
 # Install ChromeDriver (for Selenium)
-RUN DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
-    wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$DRIVER_VERSION/chromedriver_linux64.zip && \
-    unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
-    rm /tmp/chromedriver.zip
+# Install ChromeDriver (for Selenium)
+RUN wget -O /tmp/chromedriver-linux64.zip "https://storage.googleapis.com/chrome-for-testing-public/119.0.6045.105/linux64/chromedriver-linux64.zip" && \
+    unzip /tmp/chromedriver-linux64.zip -d /tmp/ && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
+    chmod +x /usr/bin/chromedriver && \
+    rm -rf /tmp/chromedriver*
+
+# Set ChromeDriver path environment variable
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
 # Set display port (needed for Chrome in headless mode)
 ENV DISPLAY=:99
@@ -40,6 +45,7 @@ EXPOSE 5000
 # Start Flask app
 # Fixed (shell form that expands $PORT):# Change your current CMD line to:
 CMD ["python", "app.py"]
+
 
 
 
