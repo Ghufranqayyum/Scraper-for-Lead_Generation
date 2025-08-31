@@ -316,15 +316,6 @@ def cleanup_user_session(session_id):
     Call this when user session ends
     """
     try:
-        # Kill any browser processes for this session first
-        try:
-            import psutil
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                if f"user_{session_id}" in str(proc.info.get('cmdline', [])):
-                    proc.terminate()
-        except ImportError:
-            print("psutil not available - skipping process cleanup")
-
         time.sleep(20)  # Brief wait for processes to close
 
         user_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{session_id}")
@@ -422,7 +413,6 @@ def extract_profile_info(driver):
         profile_url = f"https://www.instagram.com/{username}/"
         driver.get(profile_url)
         time.sleep(10)
-        driver.execute_script("document.body.style.zoom='67%'")
         print(f"👤 Profile: {profile_url}")
         data["Profile URL"]=profile_url
         # try:
