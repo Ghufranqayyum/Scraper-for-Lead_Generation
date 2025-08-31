@@ -13,6 +13,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import uuid
 import time
+import traceback
 
 # Import scraper functions
 from facebook_scraper import run_facebook_scraper
@@ -167,6 +168,11 @@ def run_scraper(user_id, platform, target, limit):
 
     except Exception as e:
         # Update user status with error
+        error_traceback = traceback.format_exc()
+        print(f"❌ SCRAPING ERROR:")
+        print(error_traceback)
+        print(f"❌ Error type: {type(e).__name__}")
+        print(f"❌ Error message: {str(e)}")
         with sessions_lock:
             if user_id in user_sessions:  # Check if session still exists
                 user_sessions[user_id].update({
