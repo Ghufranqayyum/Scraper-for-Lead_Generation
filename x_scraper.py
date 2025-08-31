@@ -122,6 +122,11 @@ def copy_essential_profile_files(source_folder, dest_folder):
         "Preferences",  # Browser preferences
         "Secure Preferences",  # Secure preferences
         "Network/Cookies"  # Network cookies (if exists)
+        "Cache",  # Add browser cache
+        "Code Cache",  # Add code cache
+        "GPUCache",  # Add GPU cache
+        "IndexedDB",  # Add IndexedDB data
+        "Service Worker"  # Add service worker data
     ]
 
     copied_count = 0
@@ -197,6 +202,8 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         options.add_argument("--headless=new")
     
     # Essential Chrome options for Railway
+    # Use this for Railway instead:
+    options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -205,6 +212,9 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     options.add_argument("--disable-plugins")
     options.add_argument("--disable-web-security")
     options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
     options.add_argument("--disable-features=VizDisplayCompositor")
     
     # Use user's isolated profile
