@@ -39,6 +39,7 @@ EXPOSE 5000
 
 # Start Flask app
 # Fixed (shell form that expands $PORT):# Change your current CMD line to:
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080", "--timeout", "600", "--workers", "1"]
+CMD ["python", "app.py"]
+
 
 
