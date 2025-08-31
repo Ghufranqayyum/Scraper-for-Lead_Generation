@@ -17,7 +17,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
+import csv
 
 # def start_driver(headless=False):
 #     user_data_dir = os.path.join(os.getcwd(), "instagram_profile_data")
