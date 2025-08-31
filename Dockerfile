@@ -38,5 +38,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Start Flask app
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT", "--timeout", "600", "--workers", "1"]
+# Fixed (shell form that expands $PORT):
+CMD gunicorn app:app --bind 0.0.0.0:$PORT --timeout 600 --workers 1
+
 
