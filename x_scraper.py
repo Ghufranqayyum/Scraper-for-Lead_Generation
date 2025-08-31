@@ -1,6 +1,5 @@
 import re
 import time
-import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -444,16 +443,22 @@ def extract_emails(text):
 
 
 
+# Remove: import pandas as pd
+
 def save_to_csv(data):
-    df = pd.DataFrame(data)
     filename = "emails.csv"
     file_counter = 1
     while os.path.exists(filename):
         filename = f"emails{file_counter}.csv"
         file_counter += 1
 
-    df.to_csv(filename, index=False)
-    print(f"📧 Emails saved to: {filename}")
+    with open(filename, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if data:
+            writer.writerow(data[0].keys())  # Headers
+            for row in data:
+                writer.writerow(row.values())
+
     return filename
 
 
