@@ -587,7 +587,7 @@ def extract_user_info_from_tweet(driver, tweet_url):
                 except:
                     bio = "Not Available"
 
-        print(f"👤 Name: {data["Name"]}")
+        print(f"👤 Name: {data['Name']}")
         #print(f"📃 Bio: {bio}")
 
         # Extract bio
