@@ -292,9 +292,11 @@ def check_login_status(driver):
 
         if has_logged_in_data and not is_login_page:
             print("🎉 Successfully logged in using copied profile!")
+            sys.stdout.flush()
             return True
         elif is_login_page:
             print("❌ Redirected to login page - cookies may have expired")
+            sys.stdout.flush()
             return False
         else:
             print("⚠️ Login status unclear - checking page elements...")
@@ -302,6 +304,7 @@ def check_login_status(driver):
             nav_elements = ['search & explore', 'create', 'reels', 'messages']
             if any(element in page_source for element in nav_elements):
                 print("✅ Detected navigation elements - likely logged in")
+                sys.stdout.flush()
                 return True
 
             return False
@@ -538,6 +541,10 @@ def scrape_from_hashtag(hashtag, scrolls):
     print(f"🔍 Scraping Instagram for #{hashtag} with {scrolls} scrolls")
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
+    print("Checking for login")
+    sys.stdout.flush()
+    check_login_status(driver)
+    
     import time
     import os
 
