@@ -222,27 +222,28 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
 
     try:
         # Try different Chrome paths (Windows for local, Linux for Railway)
-        chrome_binary_paths = [
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
-            "/usr/bin/google-chrome",  # Railway Linux
-            "/usr/local/bin/chromedriver",
-            "/usr/bin/chromium-browser",
-            "/opt/google/chrome/chrome"
-        ]
+        # chrome_binary_paths = [
+        #     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
+        #     "/usr/bin/google-chrome",  # Railway Linux
+        #     "/usr/local/bin/chromedriver",
+        #     "/usr/bin/chromium-browser",
+        #     "/opt/google/chrome/chrome"
+        # ]
 
-        for chrome_path in chrome_binary_paths:
-            if os.path.exists(chrome_path):
-                options.binary_location = chrome_path
-                break
+        # for chrome_path in chrome_binary_paths:
+        #     if os.path.exists(chrome_path):
+        #         options.binary_location = chrome_path
+        #         break
 
-        # Use environment variable for chromedriver path
-        chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
+        # # Use environment variable for chromedriver path
+        # chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
 
-        if os.path.exists(chromedriver_path):
-            service = Service(chromedriver_path)
-        else:
-            # Fallback to webdriver_manager (works locally)
-            service = Service(ChromeDriverManager().install())
+        # if os.path.exists(chromedriver_path):
+        #     service = Service(chromedriver_path)
+        # else:
+        #     # Fallback to webdriver_manager (works locally)
+        #     service = Service(ChromeDriverManager().install())
+        service = Service("/usr/bin/chromedriver")
 
         driver = webdriver.Chrome(service=service, options=options)
 
