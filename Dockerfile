@@ -1,16 +1,20 @@
 # Use official Python image
 FROM python:3.10-slim
 
-# Install system dependencies and Chrome
+# Install system dependencies
 RUN apt-get update && apt-get install -y wget gnupg unzip curl \
     fonts-liberation libx11-6 libx11-xcb1 libxcomposite1 libxcursor1 \
     libxdamage1 libxi6 libxtst6 libnss3 libatk-bridge2.0-0 libgtk-3-0 \
     libdrm2 libgbm1 libasound2 libxrandr2 libxss1 libxkbcommon0 \
-    libpangocairo-1.0-0 libpango-1.0-0 libcups2 libatk1.0-0 \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
-    && apt-get update && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
+    libpangocairo-1.0-0 libpango-1.0-0 libcups2 libatk1.0-0
+
+# Add Google Chrome repo + key (new method, since apt-key is deprecated)
+RUN wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-linux.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+    > /etc/apt/sources.list.d/google-chrome.list
+
+# Install Google Chrome
+RUN apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*
 
 # Install ChromeDriver (for Selenium)
 RUN DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
@@ -24,14 +28,14 @@ ENV DISPLAY=:99
 # Set work directory
 WORKDIR /app
 
-# Copy all files into the container
+# Copy project files into container
 COPY . /app
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port (Flask usually runs on 5000)
+# Expose Flask port
 EXPOSE 5000
 
-# Run Flask app
+# Start Flask app
 CMD ["python", "app.py"]
