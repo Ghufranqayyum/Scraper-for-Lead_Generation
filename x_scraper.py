@@ -324,15 +324,6 @@ def cleanup_user_session(session_id):
     Call this when user session ends
     """
     try:
-        # Kill any browser processes for this session first
-        try:
-            import psutil
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                if f"user_{session_id}" in str(proc.info.get('cmdline', [])):
-                    proc.terminate()
-        except ImportError:
-            print("psutil not available - skipping process cleanup")
-
         time.sleep(20)  # Brief wait for processes to close
 
         user_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{session_id}")
@@ -552,7 +543,7 @@ def extract_user_info_from_tweet(driver, tweet_url):
             tweet_url = tweet_url.split("/photo/")[0]
 
         driver.get(tweet_url)
-        time.sleep(15)
+        time.sleep(10)
 
         # Close popup if visible
         try:
