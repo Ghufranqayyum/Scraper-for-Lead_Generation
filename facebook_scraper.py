@@ -36,22 +36,6 @@ def run_facebook_scraper(value,scroll):
     from selenium.webdriver.chrome.options import Options
 
     options = Options()
-     # ⛔ Block notifications popup
-
-    # driver = webdriver.Chrome(options=options)
-    # wait = WebDriverWait(driver, 15)
-    # import os
-    # from webdriver_manager.chrome import ChromeDriverManager
-    # user_data_dir = os.path.join(os.getcwd(), "facebook_scraper_profile")
-    # # ✅ Persist profile directory so login is saved
-    # options.add_argument(f"--user-data-dir={user_data_dir}")
-    # options.add_argument("--profile-directory=Default")  # Can change if you want multiple
-    # options.add_argument("--disable-notifications")
-    # #options.add_argument("--headless=True")
-    # options.add_argument("--headless=new")
-    #
-    # service = Service(ChromeDriverManager().install())
-    # driver = webdriver.Chrome(service=service, options=options)
 
     from selenium.common.exceptions import NoSuchElementException
     from selenium.webdriver.common.by import By
@@ -229,10 +213,10 @@ def run_facebook_scraper(value,scroll):
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         # Memory and process options
-        #options.add_argument("--single-process")  # Add this back
+
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-plugins")
-        #options.add_argument("--disable-images")  # Faster loading
+
 
         # Profile and security options
         options.add_argument("--disable-web-security")
@@ -336,16 +320,6 @@ def run_facebook_scraper(value,scroll):
 
     def cleanup_user_session(session_id):
         try:
-           # Kill any browser processes for this session first
-           try:
-               import psutil
-               for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                   if f"user_{session_id}" in str(proc.info.get('cmdline', [])):
-                       proc.terminate()
-           except ImportError:
-               print("psutil not available - skipping process cleanup")
-
-
            time.sleep(20)  # Brief wait for processes to close
 
            user_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{session_id}")
@@ -548,7 +522,6 @@ def run_facebook_scraper(value,scroll):
                 about_url = profile_url + "/about_contact_and_basic_info"
                 driver.get(about_url)
                 time.sleep(5)
-                driver.execute_script("document.body.style.zoom='67%'")
                 time.sleep(5)
                 # Now restrict to visible elements only
                 import re
@@ -618,7 +591,7 @@ def run_facebook_scraper(value,scroll):
     #time.sleep(10)
     #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
     #time.sleep(10)
-    driver.execute_script("document.body.style.zoom='67%'")
+    
 
     scroll_page()
     try:
@@ -671,8 +644,7 @@ def run_facebook_scraper(value,scroll):
 
 
                 time.sleep(10)  # Wait for profile to load
-                driver.execute_script("document.body.style.zoom='60%'")
-                time.sleep(10)
+    
 
                 elements = driver.find_elements(By.XPATH, '//a[.//span[text()="About"]]')
                 print(f"Found {len(elements)} About elements")
@@ -692,7 +664,7 @@ def run_facebook_scraper(value,scroll):
                 print("✅ Clicked on About tab.")
 
                 time.sleep(5)
-                driver.execute_script("document.body.style.zoom='50%'")
+    
 
                 # Now extract email/contact as usual
                 about_page = driver.page_source
