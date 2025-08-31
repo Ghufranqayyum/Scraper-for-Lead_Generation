@@ -224,6 +224,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         chrome_binary_paths = [
             "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
             "/usr/bin/google-chrome",  # Railway Linux
+            "/usr/local/bin/chromedriver",
             "/usr/bin/chromium-browser",
             "/opt/google/chrome/chrome"
         ]
