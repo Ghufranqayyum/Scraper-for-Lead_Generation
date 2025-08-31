@@ -18,6 +18,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 import csv
+import sys
 
 # def start_driver(headless=False):
 #     user_data_dir = os.path.join(os.getcwd(), "instagram_profile_data")
@@ -529,6 +530,11 @@ def save_to_csv(data):
 
 
 def scrape_from_hashtag(hashtag, scrolls):
+    print("STEP A: Starting scrape_hashtag")
+    sys.stdout.flush()
+    
+    print("STEP B: About to start_driver")
+    sys.stdout.flush()
     print(f"🔍 Scraping Instagram for #{hashtag} with {scrolls} scrolls")
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
@@ -561,5 +567,14 @@ def run_instagram_scraper(tag,scroll):
     print(f"- Master profile exists: {os.path.exists('instagram_profile_data')}")
     print(f"- Current directory: {os.getcwd()}")
     print(f"- Directory contents: {os.listdir('.')}")
+    print("STEP 1: Starting Insta_scraper")
+    sys.stdout.flush()  # Force immediate output
+    
+    print(f"STEP 2: Environment check complete")
+    sys.stdout.flush()
+    
     file=scrape_from_hashtag(tag, scroll)
+     
+    print("STEP 4: scrape_hashtag completed")
+    sys.stdout.flush()
     return file
