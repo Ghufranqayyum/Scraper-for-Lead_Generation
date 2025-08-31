@@ -191,78 +191,51 @@ def create_minimal_profile(user_profile_dir):
 
 
 def create_isolated_browser(user_profile_dir, headless, session_id):
-    """
-    Create browser instance using user's isolated profile directory
-    """
-
+   def create_isolated_browser(user_profile_dir, headless, session_id):
     options = Options()
-
     if headless:
-        options.add_argument("--headless=new")  # Correct headless syntax
-
-    # Essential Chrome options for stability
+        options.add_argument("--headless=new")
+    
+    # Essential Chrome options for Railway
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-blink-features=AutomationControlled")
-
-    # Memory and process options
-    # options.add_argument("--single-process")  # Add this back
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-plugins")
-    # options.add_argument("--disable-images")  # Faster loading
-
-    # Profile and security options
     options.add_argument("--disable-web-security")
     options.add_argument("--allow-running-insecure-content")
     options.add_argument("--disable-features=VizDisplayCompositor")
-
+    
     # Use user's isolated profile
     options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
     options.add_argument("--profile-directory=Default")
-
-    # Add unique remote debugging port to avoid conflicts
-    debug_port = 9222 + hash(session_id) % 1000
-    options.add_argument(f"--remote-debugging-port={debug_port}")
-
+    
+    # Set Chrome binary location for Railway
+    options.binary_location = "/usr/bin/google-chrome-stable"
+    
     try:
-        # Try different Chrome paths (Windows for local, Linux for Railway)
-        chrome_binary_paths = [
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
-            "/usr/bin/google-chrome",  # Railway Linux
-            "/usr/local/bin/chromedriver",
-            "/usr/bin/chromium-browser",
-            "/opt/google/chrome/chrome"
-        ]
-
-        for chrome_path in chrome_binary_paths:
-            if os.path.exists(chrome_path):
-                options.binary_location = chrome_path
-                break
-
-        # Use environment variable for chromedriver path
-        chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-
-        if os.path.exists(chromedriver_path):
-            service = Service(chromedriver_path)
-            print("11")
-        else:
-            # Fallback to webdriver_manager (works locally)
-            service = Service(ChromeDriverManager().install())
-            print("22")
-
+        # For Railway/Linux - use the installed ChromeDriver
+        service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=options)
-
-        # Navigate to Instagram
-        print(f"🌐 Navigating to X with session {session_id}...")
+        
+        print(f"🌐 Navigating to Instagram with session {session_id}...")
         driver.get("https://x.com/login")
         time.sleep(3)
-
         return driver
-
+        
     except Exception as e:
-        print(f"❌ Failed to create browser: {e}")
-        raise
+        print(f"❌ Failed to create driver: {e}")
+        # Fallback to webdriver_manager for local development
+        try:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
+            driver.get("https://x.com/login")
+            time.sleep(3)
+            return driver
+        except Exception as e2:
+            print(f"❌ Fallback also failed: {e2}")
+            raise e2
 
 
 def check_login_status(driver):
