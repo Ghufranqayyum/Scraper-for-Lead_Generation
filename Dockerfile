@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib
 
 # Install ChromeDriver (for Selenium)
 # Install ChromeDriver (for Selenium)
-RUN wget -O /tmp/chromedriver-linux64.zip "https://storage.googleapis.com/chrome-for-testing-public/119.0.6045.105/linux64/chromedriver-linux64.zip" && \
+# Install ChromeDriver (for Selenium) - Updated for Chrome 139
+RUN wget -O /tmp/chromedriver-linux64.zip "https://storage.googleapis.com/chrome-for-testing-public/139.0.7258.154/linux64/chromedriver-linux64.zip" && \
     unzip /tmp/chromedriver-linux64.zip -d /tmp/ && \
     mv /tmp/chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
     chmod +x /usr/bin/chromedriver && \
@@ -45,6 +46,7 @@ EXPOSE 5000
 # Start Flask app
 # Fixed (shell form that expands $PORT):# Change your current CMD line to:
 CMD ["python", "app.py"]
+
 
 
 
