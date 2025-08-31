@@ -350,6 +350,11 @@ def before_request():
         cleanup_old_sessions()
 
 
+import os
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Railway provides PORT, default to 5000 locally
-    app.run(debug=True, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 5000))  # Railway provides $PORT
+    print("Using port:", os.environ.get("PORT"))
+
+    app.run(host="0.0.0.0", port=port, debug=True)
+
