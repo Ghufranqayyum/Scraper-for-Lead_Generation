@@ -54,6 +54,7 @@ def start_driver(headless=True, user_session=None):
         user_session = str(uuid.uuid4())[:8]
     session=user_session
     print(f"🚀 Creating new browser instance for session: {user_session}")
+    sys.stdout.flush() 
 
     # Create unique profile directory for this user
     temp_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{user_session}")
@@ -88,10 +89,12 @@ def copy_saved_profile_to_user_session(user_profile_dir):
         copy_essential_profile_files(master_profile_folder, user_profile_dir)
 
         print(f"✅ Profile copied to isolated user directory")
+        sys.stdout.flush() 
 
     except Exception as e:
         print(f"⚠️ Profile copy failed: {e}")
         # Create minimal profile structure
+        sys.stdout.flush() 
         create_minimal_profile(user_profile_dir)
 
 
@@ -140,9 +143,11 @@ def copy_essential_profile_files(source_folder, dest_folder):
 
                 copied_count += 1
                 print(f"  ✓ Copied: {file_name}")
+                sys.stdout.flush() 
 
         except Exception as e:
             print(f"  ⚠️ Failed to copy {file_name}: {e}")
+            sys.stdout.flush() 
 
     # Copy Local State file (important for Chrome)
     try:
@@ -153,6 +158,7 @@ def copy_essential_profile_files(source_folder, dest_folder):
             shutil.copy2(source_local_state, dest_local_state)
             copied_count += 1
             print(f"  ✓ Copied: Local State")
+            sys.stdout.flush() 
 
     except Exception as e:
         print(f"  ⚠️ Failed to copy Local State: {e}")
@@ -196,10 +202,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         options.add_argument("--headless=new")  # Correct headless syntax
 
     # Essential Chrome options for stability
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-blink-features=AutomationControlled")
+    
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -268,6 +271,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         # Navigate to Instagram
         print(f"🌐 Navigating to Instagram with session {session_id}...")
+        sys.stdout.flush() 
         driver.get("https://www.instagram.com")
         time.sleep(3)
 
@@ -471,13 +475,13 @@ def extract_profile_info(driver):
         # except:
         #    print("Error on more")
 
-        import re
+
 
         profile_page = driver.page_source
         email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', profile_page)
         if email_matches:
             data["Email"] = email_matches[0]
-        import re
+
 
         # Search in all elements that might contain the number
         elements = driver.find_elements(By.XPATH,
@@ -573,6 +577,7 @@ def scrape_from_hashtag(hashtag, scrolls):
     print("STEP B: About to start_driver")
     sys.stdout.flush()
     print(f"🔍 Scraping Instagram for #{hashtag} with {scrolls} scrolls")
+    sys.stdout.flush() 
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
     time.sleep(10)
@@ -580,9 +585,7 @@ def scrape_from_hashtag(hashtag, scrolls):
     sys.stdout.flush()
     check_login_status(driver)
     time.sleep(5)
-    
-    import time
-    import os
+
 
     driver.get(f"https://www.instagram.com/explore/tags/{hashtag}/")
     time.sleep(5)
