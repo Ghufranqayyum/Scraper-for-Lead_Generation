@@ -579,7 +579,7 @@ def scrape_from_hashtag(hashtag, scrolls):
     sys.stdout.flush() 
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
-    time.sleep(10)
+    time.sleep(20)
     print("Checking for login")
     sys.stdout.flush()
     check_login_status(driver)
