@@ -19,7 +19,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 import csv
 import sys
-
+import random
 # def start_driver(headless=False):
 #     user_data_dir = os.path.join(os.getcwd(), "instagram_profile_data")
 #     options = Options()
@@ -200,6 +200,30 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-features=VizDisplayCompositor")
+    
+    # Additional stealth measures
+    options.add_argument("--disable-automation")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--disable-dev-tools")
+    options.add_argument("--no-first-run")
+    options.add_argument("--disable-default-apps")
+    
+    # Random user agent
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    ]
+    options.add_argument(f"--user-agent={random.choice(user_agents)}")
 
     # Memory and process options
     # options.add_argument("--single-process")  # Add this back
@@ -246,7 +270,9 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         service = Service("/usr/bin/chromedriver")
 
         driver = webdriver.Chrome(service=service, options=options)
-
+        # Execute script to hide webdriver property
+        time.sleep(3)
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         # Navigate to Instagram
         print(f"🌐 Navigating to Instagram with session {session_id}...")
         driver.get("https://www.instagram.com")
@@ -361,6 +387,14 @@ def get_session_info(driver, session_id):
         return {'session_id': session_id, 'status': 'error'}
 def scroll_on_hashtag(driver, scroll_times):
     post_urls = set()
+    print("⏳ Waiting for hashtag page to load...")
+    time.sleep(10)
+    page_source = driver.page_source
+    if "challenge" in page_source.lower() or "suspended" in page_source.lower():
+        print("❌ Instagram challenge or suspension detected!")
+        return list(post_urls)
+    sys.stdout.flush()
+    
     last_height = driver.execute_script("return document.body.scrollHeight")
     time.sleep(5)
     for i in range(scroll_times):
@@ -419,6 +453,7 @@ def extract_profile_info(driver):
         driver.get(profile_url)
         time.sleep(10)
         print(f"👤 Profile: {profile_url}")
+        sys.stdout.flush()
         data["Profile URL"]=profile_url
         # try:
         #     elements = driver.find_elements(By.XPATH, '//a[.//span[text()="more"]]')
@@ -464,6 +499,7 @@ def extract_profile_info(driver):
                 continue
         print(" From profile page")
         print(data)
+        sys.stdout.flush()
 
 
     except:
@@ -480,6 +516,7 @@ def extract_profile_info(driver):
         data["Contact"] = contact_match.group(1)
     print(" From Post Text")
     print(data)
+    sys.stdout.flush()
     return data
 
 
@@ -551,6 +588,8 @@ def scrape_from_hashtag(hashtag, scrolls):
 
     driver.get(f"https://www.instagram.com/explore/tags/{hashtag}/")
     time.sleep(5)
+    print("Hashtag cross")
+    sys.stdout.flush()
 
     post_urls = scroll_on_hashtag(driver, scroll_times=scrolls)
     print(f"✅ Total posts collected: {len(post_urls)}")
