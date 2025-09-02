@@ -19,7 +19,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 import csv
 import sys
-import random
 # def start_driver(headless=False):
 #     user_data_dir = os.path.join(os.getcwd(), "instagram_profile_data")
 #     options = Options()
@@ -593,6 +592,7 @@ def scrape_from_hashtag(hashtag, scrolls):
     sys.stdout.flush()
     time.sleep(10)
     print("Checking for login after hashtag")
+    check_login_status(driver)
     sys.stdout.flush()
 
     post_urls = scroll_on_hashtag(driver, scroll_times=scrolls)
