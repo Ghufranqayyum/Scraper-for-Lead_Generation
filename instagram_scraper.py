@@ -217,13 +217,6 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     options.add_argument("--no-first-run")
     options.add_argument("--disable-default-apps")
     
-    # Random user agent
-    user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    ]
-    options.add_argument(f"--user-agent={random.choice(user_agents)}")
 
     # Memory and process options
     # options.add_argument("--single-process")  # Add this back
@@ -408,6 +401,9 @@ def scroll_on_hashtag(driver, scroll_times):
                 href = link.get_attribute("href")
                 if href and "/p/" in href:
                     post_urls.add(href.split("?")[0])
+                    print(href)
+                    sys.stdout.flush()
+                    
             except:
                 continue
 
@@ -579,9 +575,11 @@ def scrape_from_hashtag(hashtag, scrolls):
     print(f"🔍 Scraping Instagram for #{hashtag} with {scrolls} scrolls")
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
+    time.sleep(10)
     print("Checking for login")
     sys.stdout.flush()
     check_login_status(driver)
+    time.sleep(5)
     
     import time
     import os
@@ -589,6 +587,9 @@ def scrape_from_hashtag(hashtag, scrolls):
     driver.get(f"https://www.instagram.com/explore/tags/{hashtag}/")
     time.sleep(5)
     print("Hashtag cross")
+    sys.stdout.flush()
+    time.sleep(10)
+    print("Checking for login after hashtag")
     sys.stdout.flush()
 
     post_urls = scroll_on_hashtag(driver, scroll_times=scrolls)
