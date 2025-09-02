@@ -584,8 +584,9 @@ def scrape_from_hashtag(hashtag, scrolls):
     sys.stdout.flush()
     check_login_status(driver)
     time.sleep(5)
-
-
+    time.sleep(5)
+    driver.refresh()
+    time.sleep(5)
     driver.get(f"https://www.instagram.com/explore/tags/{hashtag}/")
     time.sleep(5)
     print("Hashtag cross")
