@@ -12,6 +12,7 @@ def run_facebook_scraper(value,scroll):
     import csv
     import re
     import os
+    import sys
 
     # --- Configuration ---
     EMAIL =""
@@ -193,80 +194,91 @@ def run_facebook_scraper(value,scroll):
         except Exception as e:
             print(f"❌ Failed to create minimal profile: {e}")
 
-    def create_isolated_browser(user_profile_dir, headless, session_id):
-        """
-        Create browser instance using user's isolated profile directory
-        """
+   def create_isolated_browser(user_profile_dir, headless, session_id):
+    options = Options()
 
-        """
-            Create browser instance using user's isolated profile directory
-            """
-        options = Options()
+    if headless:
+        options.add_argument("--headless=new")  # Correct headless syntax
 
-        if headless:
-            options.add_argument("--headless=new")  # Correct headless syntax
+    # Essential Chrome options for stability
+    
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-features=VizDisplayCompositor")
+    
+    # Additional stealth measures
+    options.add_argument("--disable-automation")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--disable-dev-tools")
+    options.add_argument("--no-first-run")
+    options.add_argument("--disable-default-apps")
+    
 
-        # Essential Chrome options for stability
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--disable-blink-features=AutomationControlled")
+    # Memory and process options
+    # options.add_argument("--single-process")  # Add this back
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    # options.add_argument("--disable-images")  # Faster loading
 
-        # Memory and process options
+    # Profile and security options
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-features=VizDisplayCompositor")
 
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-plugins")
+    # Use user's isolated profile
+    options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
+    options.add_argument("--profile-directory=Default")
 
+    # Add unique remote debugging port to avoid conflicts
+    debug_port = 9222 + hash(session_id) % 1000
+    options.add_argument(f"--remote-debugging-port={debug_port}")
 
-        # Profile and security options
-        options.add_argument("--disable-web-security")
-        options.add_argument("--allow-running-insecure-content")
-        options.add_argument("--disable-features=VizDisplayCompositor")
+    try:
+        # Try different Chrome paths (Windows for local, Linux for Railway)
+        # chrome_binary_paths = [
+        #     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
+        #     "/usr/bin/google-chrome",  # Railway Linux
+        #     "/usr/local/bin/chromedriver",
+        #     "/usr/bin/chromium-browser",
+        #     "/opt/google/chrome/chrome"
+        # ]
 
-        # Use user's isolated profile
-        options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
-        options.add_argument("--profile-directory=Default")
+        # for chrome_path in chrome_binary_paths:
+        #     if os.path.exists(chrome_path):
+        #         options.binary_location = chrome_path
+        #         break
 
-        # Add unique remote debugging port to avoid conflicts
-        debug_port = 9222 + hash(session_id) % 1000
-        options.add_argument(f"--remote-debugging-port={debug_port}")
+        # # Use environment variable for chromedriver path
+        # chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
 
-        try:
-            # Try different Chrome paths (Windows for local, Linux for Railway)
-            chrome_binary_paths = [
-                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
-                "/usr/bin/google-chrome",  # Railway Linux
-                "/usr/local/bin/chromedriver",
-                "/usr/bin/chromium-browser",
-                "/opt/google/chrome/chrome"
-            ]
+        # if os.path.exists(chromedriver_path):
+        #     service = Service(chromedriver_path)
+        # else:
+        #     # Fallback to webdriver_manager (works locally)
+        #     service = Service(ChromeDriverManager().install())
+        service = Service("/usr/bin/chromedriver")
 
-            for chrome_path in chrome_binary_paths:
-                if os.path.exists(chrome_path):
-                    options.binary_location = chrome_path
-                    break
+        driver = webdriver.Chrome(service=service, options=options)
+        # Execute script to hide webdriver property
+        time.sleep(3)
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        # Navigate to Instagram
+        print(f"🌐 Navigating to Facebook with session {session_id}...")
+        sys.stdout.flush() 
+        driver.get("https://www.facebook.com")
+        time.sleep(3)
 
-            # Use environment variable for chromedriver path
-            chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
+        return driver
 
-            if os.path.exists(chromedriver_path):
-                service = Service(chromedriver_path)
-            else:
-                # Fallback to webdriver_manager (works locally)
-                service = Service(ChromeDriverManager().install())
-
-            driver = webdriver.Chrome(service=service, options=options)
-
-            # Navigate to Instagram
-            print(f"🌐 Navigating to facebook with session {session_id}...")
-            driver.get("https://www.facebook.com")
-            time.sleep(3)
-
-            return driver
-
-        except Exception as e:
-            print(f"❌ Failed to create browser: {e}")
-            raise
+    except Exception as e:
+        print(f"❌ Failed to create browser: {e}")
+        raise
 
     def check_login_status(driver):
         """
@@ -304,6 +316,7 @@ def run_facebook_scraper(value,scroll):
                 return True
             elif is_login_page:
                 print("❌ Redirected to login page - cookies may have expired")
+                check_and_handle_login_popup(driver,"itsghufranqayyum@gmail.com","ghufran786")
                 return False
             else:
                 print("⚠️ Login status unclear - checking page elements...")
@@ -581,12 +594,18 @@ def run_facebook_scraper(value,scroll):
     import time
     import os
     driver,session=start_driver(headless=True)
+    sys.stdout.flush() 
     #driver.get("https://www.facebook.com")
-
+       
+    check_login_status(driver)
+    sys.stdout.flush() 
 
     time.sleep(10)
     driver.get(TARGET_URL)
     time.sleep(10)
+    check_login_status(driver)
+    sys.stdout.flush() 
+
     #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
 
     #time.sleep(10)
