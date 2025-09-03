@@ -51,16 +51,16 @@ def start_driver(headless=True, user_session=None):
     # Generate unique session ID for this user
     if user_session is None:
         user_session = str(uuid.uuid4())[:8]
+
     session=user_session
     print(f"🚀 Creating new browser instance for session: {user_session}")
-    sys.stdout.flush() 
 
     # Create unique profile directory for this user
     temp_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{user_session}")
 
     # Copy saved profile to user's unique directory
-    # with profile_lock:  # Prevent concurrent access issues
-    #     copy_saved_profile_to_user_session(temp_profile_dir)
+    #with profile_lock:  # Prevent concurrent access issues
+      #  copy_saved_profile_to_user_session(temp_profile_dir)
 
     # Create browser with copied profile
     driver = create_isolated_browser(temp_profile_dir, headless, user_session)
@@ -74,7 +74,7 @@ def copy_saved_profile_to_user_session(user_profile_dir):
     This ensures each user gets their own browser instance with same cookies
     """
 
-    master_profile_folder = "instagram_profile_data"  # Your saved profile
+    master_profile_folder = "x_scraper_profile"  # Your saved profile
 
     try:
         # Remove existing user profile if exists
@@ -88,12 +88,10 @@ def copy_saved_profile_to_user_session(user_profile_dir):
         copy_essential_profile_files(master_profile_folder, user_profile_dir)
 
         print(f"✅ Profile copied to isolated user directory")
-        sys.stdout.flush() 
 
     except Exception as e:
         print(f"⚠️ Profile copy failed: {e}")
         # Create minimal profile structure
-        sys.stdout.flush() 
         create_minimal_profile(user_profile_dir)
 
 
@@ -122,6 +120,11 @@ def copy_essential_profile_files(source_folder, dest_folder):
         "Preferences",  # Browser preferences
         "Secure Preferences",  # Secure preferences
         "Network/Cookies"  # Network cookies (if exists)
+        "Cache",  # Add browser cache
+        "Code Cache",  # Add code cache
+        "GPUCache",  # Add GPU cache
+        "IndexedDB",  # Add IndexedDB data
+        "Service Worker"  # Add service worker data
     ]
 
     copied_count = 0
@@ -142,11 +145,9 @@ def copy_essential_profile_files(source_folder, dest_folder):
 
                 copied_count += 1
                 print(f"  ✓ Copied: {file_name}")
-                sys.stdout.flush() 
 
         except Exception as e:
             print(f"  ⚠️ Failed to copy {file_name}: {e}")
-            sys.stdout.flush() 
 
     # Copy Local State file (important for Chrome)
     try:
@@ -157,7 +158,6 @@ def copy_essential_profile_files(source_folder, dest_folder):
             shutil.copy2(source_local_state, dest_local_state)
             copied_count += 1
             print(f"  ✓ Copied: Local State")
-            sys.stdout.flush() 
 
     except Exception as e:
         print(f"  ⚠️ Failed to copy Local State: {e}")
@@ -196,12 +196,12 @@ def create_minimal_profile(user_profile_dir):
 
 def create_isolated_browser(user_profile_dir, headless, session_id):
     options = Options()
-
     if headless:
-        options.add_argument("--headless=new")  # Correct headless syntax
-
-    # Essential Chrome options for stability
+        options.add_argument("--headless=new")
     
+    # Essential Chrome options for Railway
+    # Use this for Railway instead:
+   # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -210,75 +210,40 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     options.add_argument("--disable-plugins")
     options.add_argument("--disable-web-security")
     options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
     options.add_argument("--disable-features=VizDisplayCompositor")
     
-    # Additional stealth measures
-    options.add_argument("--disable-automation")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--disable-dev-tools")
-    options.add_argument("--no-first-run")
-    options.add_argument("--disable-default-apps")
-    
-
-    # Memory and process options
-    # options.add_argument("--single-process")  # Add this back
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-plugins")
-    # options.add_argument("--disable-images")  # Faster loading
-
-    # Profile and security options
-    options.add_argument("--disable-web-security")
-    options.add_argument("--allow-running-insecure-content")
-    options.add_argument("--disable-features=VizDisplayCompositor")
-
     # Use user's isolated profile
     options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
     options.add_argument("--profile-directory=Default")
-
-    # Add unique remote debugging port to avoid conflicts
-    debug_port = 9222 + hash(session_id) % 1000
-    options.add_argument(f"--remote-debugging-port={debug_port}")
-
+    
+    # Set Chrome binary location for Railway
+    options.binary_location = "/usr/bin/google-chrome-stable"
+    
     try:
-        # Try different Chrome paths (Windows for local, Linux for Railway)
-        # chrome_binary_paths = [
-        #     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
-        #     "/usr/bin/google-chrome",  # Railway Linux
-        #     "/usr/local/bin/chromedriver",
-        #     "/usr/bin/chromium-browser",
-        #     "/opt/google/chrome/chrome"
-        # ]
-
-        # for chrome_path in chrome_binary_paths:
-        #     if os.path.exists(chrome_path):
-        #         options.binary_location = chrome_path
-        #         break
-
-        # # Use environment variable for chromedriver path
-        # chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-
-        # if os.path.exists(chromedriver_path):
-        #     service = Service(chromedriver_path)
-        # else:
-        #     # Fallback to webdriver_manager (works locally)
-        #service = Service(ChromeDriverManager().install())
+        # For Railway/Linux - use the installed ChromeDriver
         service = Service("/usr/bin/chromedriver")
-
         driver = webdriver.Chrome(service=service, options=options)
-        # Execute script to hide webdriver property
-        time.sleep(10)
-       # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        # Navigate to Instagram
+        
         print(f"🌐 Navigating to Instagram with session {session_id}...")
-        sys.stdout.flush() 
         driver.get("https://www.instagram.com")
         time.sleep(3)
-
         return driver
-
+        
     except Exception as e:
-        print(f"❌ Failed to create browser: {e}")
-        raise
+        print(f"❌ Failed to create driver: {e}")
+        # Fallback to webdriver_manager for local development
+        try:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
+            driver.get("https://www.instagram.com")
+            time.sleep(3)
+            return driver
+        except Exception as e2:
+            print(f"❌ Fallback also failed: {e2}")
+            raise e2
 
 
 def check_login_status(driver):
@@ -384,13 +349,7 @@ def get_session_info(driver, session_id):
 def scroll_on_hashtag(driver, scroll_times):
     post_urls = set()
     print("⏳ Waiting for hashtag page to load...")
-    time.sleep(10)
-    page_source = driver.page_source
-    if "challenge" in page_source.lower() or "suspended" in page_source.lower():
-        print("❌ Instagram challenge or suspension detected!")
-        return list(post_urls)
-    sys.stdout.flush()
-    
+    time.sleep(10) 
     last_height = driver.execute_script("return document.body.scrollHeight")
     time.sleep(5)
     for i in range(scroll_times):
@@ -688,22 +647,13 @@ def scrape_from_hashtag(hashtag, scrolls):
     sys.stdout.flush() 
     driver,session = start_driver(headless=True)
     #driver.get("https://www.instagram.com/accounts/login/")
-    time.sleep(20)
-    print("Checking for login")
-    sys.stdout.flush()
+    time.sleep(10)
     #check_login_status(driver)
     load_cookies_into_browser(driver,"instagram")
     time.sleep(5)
     time.sleep(5)
     driver.get(f"https://www.instagram.com/explore/tags/{hashtag}/")
-    time.sleep(5)
-    print("Hashtag cross")
-    sys.stdout.flush()
     time.sleep(10)
-    print("Checking for login after hashtag")
-    #check_login_status(driver)
-    sys.stdout.flush()
-
     post_urls = scroll_on_hashtag(driver, scroll_times=scrolls)
     print(f"✅ Total posts collected: {len(post_urls)}")
 
