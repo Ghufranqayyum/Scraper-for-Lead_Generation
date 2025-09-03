@@ -41,6 +41,114 @@ import shutil
 import threading
 profile_lock = threading.Lock()
 import csv
+def load_cookies_into_browser(driver, platform):
+    """
+    Load saved cookies into isolated browser
+    platform: 'instagram', 'facebook', or 'x'
+    """
+    print(f"🔄 Loading {platform} cookies into browser...")
+
+    platform_configs = {
+        'instagram': {
+            'url': 'https://www.instagram.com',
+            'cookies_file': 'instagram_cookies.json',
+            'storage_file': 'instagram_local_storage.json'
+        },
+        'facebook': {
+            'url': 'https://www.facebook.com',
+            'cookies_file': 'facebook_cookies.json',
+            'storage_file': 'facebook_local_storage.json'
+        },
+        'x': {
+            'url': 'https://www.x.com',
+            'cookies_file': 'x_cookies.json',
+            'storage_file': 'x_local_storage.json'
+        }
+    }
+
+    if platform not in platform_configs:
+        print(f"❌ Unknown platform: {platform}")
+        return False
+
+    config = platform_configs[platform]
+
+    try:
+        # Check if cookie file exists
+        if not os.path.exists(config['cookies_file']):
+            print(f"❌ Cookie file not found: {config['cookies_file']}")
+            return False
+
+        # Navigate to platform first
+        driver.get(config['url'])
+        time.sleep(3)
+
+        # Clear existing cookies
+        driver.delete_all_cookies()
+
+        # Load cookies from JSON
+        with open(config['cookies_file'], 'r') as f:
+            cookies = json.load(f)
+
+        # Add cookies to browser
+        cookies_added = 0
+        for cookie in cookies:
+            try:
+                # Clean cookie format for Selenium
+                cookie_clean = {
+                    'name': cookie['name'],
+                    'value': cookie['value'],
+                    'domain': cookie['domain'],
+                    'path': cookie.get('path', '/'),
+                }
+
+                # Add optional fields
+                if 'secure' in cookie:
+                    cookie_clean['secure'] = cookie['secure']
+                if 'httpOnly' in cookie:
+                    cookie_clean['httpOnly'] = cookie['httpOnly']
+                if 'sameSite' in cookie and cookie['sameSite']:
+                    cookie_clean['sameSite'] = cookie['sameSite']
+
+                driver.add_cookie(cookie_clean)
+                cookies_added += 1
+
+            except Exception as e:
+                print(f"⚠️ Failed to add cookie {cookie['name']}: {e}")
+                continue
+
+        print(f"✅ Added {cookies_added}/{len(cookies)} cookies")
+
+        # Load local storage if available
+        if os.path.exists(config['storage_file']):
+            try:
+                with open(config['storage_file'], 'r') as f:
+                    local_storage = json.load(f)
+
+                # Set local storage items
+                for key, value in local_storage.items():
+                    try:
+                        # Escape quotes in the value
+                        escaped_value = str(value).replace("'", "\\'").replace('"', '\\"')
+                        driver.execute_script(f"localStorage.setItem('{key}', '{escaped_value}');")
+                    except Exception as e:
+                        print(f"⚠️ Failed to set local storage {key}: {e}")
+
+                print(f"✅ Loaded {len(local_storage)} local storage items")
+
+            except Exception as e:
+                print(f"⚠️ Could not load local storage: {e}")
+
+        # Refresh page to apply cookies
+        driver.refresh()
+        time.sleep(5)
+
+        print(f"🎉 Successfully loaded {platform} session!")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error loading {platform} cookies: {e}")
+        return False
+
 
 
 def start_driver(headless=True, user_session=None):
@@ -61,8 +169,8 @@ def start_driver(headless=True, user_session=None):
     temp_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{user_session}")
 
     # Copy saved profile to user's unique directory
-    with profile_lock:  # Prevent concurrent access issues
-        copy_saved_profile_to_user_session(temp_profile_dir)
+    #with profile_lock:  # Prevent concurrent access issues
+      #  copy_saved_profile_to_user_session(temp_profile_dir)
 
     # Create browser with copied profile
     driver = create_isolated_browser(temp_profile_dir, headless, user_session)
@@ -203,7 +311,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     
     # Essential Chrome options for Railway
     # Use this for Railway instead:
-    options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
+   # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -591,11 +699,12 @@ def scrape_hashtag(hashtag,scroll):
     print(f"📌 Scraping hashtag: #{hashtag}")
     driver,session = start_driver(headless=True)
     #driver.get("https://x.com/login")
-    if not check_login_status(driver):
-        print("Authentication failed - profile didn't work on Railway")
-        driver.quit()
-        cleanup_user_session(session)
-        raise Exception("Authentication required - please log in manually")
+    # if not check_login_status(driver):
+    #     print("Authentication failed - profile didn't work on Railway")
+    #     driver.quit()
+    #     cleanup_user_session(session)
+    #     raise Exception("Authentication required - please log in manually")
+    load_cookies_into_browser(driver,"x")
     
     time.sleep(10)
     import time
