@@ -261,13 +261,13 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
         #     service = Service(chromedriver_path)
         # else:
         #     # Fallback to webdriver_manager (works locally)
-        #     service = Service(ChromeDriverManager().install())
-        service = Service("/usr/bin/chromedriver")
+        service = Service(ChromeDriverManager().install())
+        #service = Service("/usr/bin/chromedriver")
 
         driver = webdriver.Chrome(service=service, options=options)
         # Execute script to hide webdriver property
-        time.sleep(3)
-        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        time.sleep(10)
+       # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         # Navigate to Instagram
         print(f"🌐 Navigating to Instagram with session {session_id}...")
         sys.stdout.flush() 
