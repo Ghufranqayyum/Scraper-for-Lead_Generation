@@ -347,8 +347,8 @@ def run_facebook_scraper(value,scroll):
             print("⚠️ Login popup detected after redirect. Attempting to re-login...")
 
             try:
-                email_element = driver.find_element(By.NAME, "email")
-                pass_element = driver.find_element(By.NAME, "pass")
+                email_element = driver.find_element(By.NAME, "itsghufranqayyum@gmail.com")
+                pass_element = driver.find_element(By.NAME, "ghufran786")
 
                 email_element.clear()
                 email_element.send_keys(email)
@@ -743,7 +743,7 @@ def run_facebook_scraper(value,scroll):
     driver.get(TARGET_URL)
     sys.stdout.flush() 
 
-    #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
+    check_and_handle_login_popup(driver, EMAIL, PASSWORD)
 
     #time.sleep(10)
     #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
