@@ -705,7 +705,7 @@ def run_facebook_scraper(value,scroll):
     driver,session=start_driver(headless=True)
     sys.stdout.flush() 
     #driver.get("https://www.facebook.com")
-    load_cookies_into_browser(driver, platform)
+    load_cookies_into_browser(driver,"facebook")
     sys.stdout.flush() 
     # check_login_status(driver)
     # sys.stdout.flush() 
