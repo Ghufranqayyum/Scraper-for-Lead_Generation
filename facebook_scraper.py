@@ -371,18 +371,36 @@ def run_facebook_scraper(value,scroll):
     #     driver.find_element(By.NAME, "login").click()
     #     time.sleep(5)
     def scroll_page():
+        print("⏳ Waiting for hashtag page to load...")
+        time.sleep(10) 
         last_height = driver.execute_script("return document.body.scrollHeight")
+        time.sleep(5)
         for i in range(SCROLL_COUNT):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
-            time.sleep(50)
+            time.sleep(15)
+    
+            print(f"🔁 Scroll {i+1}/{SCROLL_COUNT} ")
+            sys.stdout.flush()
+            # Optional: break if no new scroll happened
             new_height = driver.execute_script("return document.body.scrollHeight")
-            time.sleep(10)
             if new_height == last_height:
-                print("⏹️ No more content to load.")
-                sys.stdout.flush() 
-                #break
+                print("🛑 No more scroll possible.")
+                break
             last_height = new_height
+
+        
+        # last_height = driver.execute_script("return document.body.scrollHeight")
+        # for i in range(SCROLL_COUNT):
+        #     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        #     print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
+        #     time.sleep(50)
+        #     new_height = driver.execute_script("return document.body.scrollHeight")
+        #     time.sleep(10)
+        #     if new_height == last_height:
+        #         print("⏹️ No more content to load.")
+        #         sys.stdout.flush() 
+        #         #break
+        #     last_height = new_height
         
     #     """
     #     Enhanced scrolling function optimized for cloud environments
