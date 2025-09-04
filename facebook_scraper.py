@@ -197,12 +197,12 @@ def run_facebook_scraper(value,scroll):
     
     def create_isolated_browser(user_profile_dir, headless, session_id):
             options = Options()
-        
             if headless:
-                options.add_argument("--headless=new")  # Correct headless syntax
-        
-            # Essential Chrome options for stability
+                options.add_argument("--headless=new")
             
+            # Essential Chrome options for Railway
+            # Use this for Railway instead:
+           # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--disable-gpu")
@@ -211,75 +211,41 @@ def run_facebook_scraper(value,scroll):
             options.add_argument("--disable-plugins")
             options.add_argument("--disable-web-security")
             options.add_argument("--allow-running-insecure-content")
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option('useAutomationExtension', False)
             options.add_argument("--disable-features=VizDisplayCompositor")
             
-            # Additional stealth measures
-            options.add_argument("--disable-automation")
-            options.add_argument("--disable-infobars")
-            options.add_argument("--disable-dev-tools")
-            options.add_argument("--no-first-run")
-            options.add_argument("--disable-default-apps")
-            
-        
-            # Memory and process options
-            # options.add_argument("--single-process")  # Add this back
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-plugins")
-            # options.add_argument("--disable-images")  # Faster loading
-        
-            # Profile and security options
-            options.add_argument("--disable-web-security")
-            options.add_argument("--allow-running-insecure-content")
-            options.add_argument("--disable-features=VizDisplayCompositor")
-        
             # Use user's isolated profile
             options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
             options.add_argument("--profile-directory=Default")
-        
-            # Add unique remote debugging port to avoid conflicts
-            debug_port = 9222 + hash(session_id) % 1000
-            options.add_argument(f"--remote-debugging-port={debug_port}")
-        
+            
+            # Set Chrome binary location for Railway
+            options.binary_location = "/usr/bin/google-chrome-stable"
+            
             try:
-                # Try different Chrome paths (Windows for local, Linux for Railway)
-                # chrome_binary_paths = [
-                #     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  # Windows
-                #     "/usr/bin/google-chrome",  # Railway Linux
-                #     "/usr/local/bin/chromedriver",
-                #     "/usr/bin/chromium-browser",
-                #     "/opt/google/chrome/chrome"
-                # ]
-        
-                # for chrome_path in chrome_binary_paths:
-                #     if os.path.exists(chrome_path):
-                #         options.binary_location = chrome_path
-                #         break
-        
-                # # Use environment variable for chromedriver path
-                # chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-        
-                # if os.path.exists(chromedriver_path):
-                #     service = Service(chromedriver_path)
-                # else:
-                #     # Fallback to webdriver_manager (works locally)
-                #     service = Service(ChromeDriverManager().install())
+                # For Railway/Linux - use the installed ChromeDriver
                 service = Service("/usr/bin/chromedriver")
-        
                 driver = webdriver.Chrome(service=service, options=options)
-                # Execute script to hide webdriver property
-                time.sleep(3)
-                driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-                # Navigate to Instagram
+                
                 print(f"🌐 Navigating to Facebook with session {session_id}...")
-                sys.stdout.flush() 
                 driver.get("https://www.facebook.com")
                 time.sleep(3)
-        
                 return driver
-        
+                
             except Exception as e:
-                print(f"❌ Failed to create browser: {e}")
-                raise
+                print(f"❌ Failed to create driver: {e}")
+                # Fallback to webdriver_manager for local development
+                try:
+                    service = Service(ChromeDriverManager().install())
+                    driver = webdriver.Chrome(service=service, options=options)
+                    driver.get("https://www.instagram.com")
+                    time.sleep(3)
+                    return driver
+                except Exception as e2:
+                    print(f"❌ Fallback also failed: {e2}")
+                    raise e2
+
 
     def check_login_status(driver):
         """
@@ -317,7 +283,6 @@ def run_facebook_scraper(value,scroll):
                 return True
             elif is_login_page:
                 print("❌ Redirected to login page - cookies may have expired")
-                check_and_handle_login_popup(driver,"itsghufranqayyum@gmail.com","ghufran786")
                 return False
             else:
                 print("⚠️ Login status unclear - checking page elements...")
@@ -712,8 +677,6 @@ def run_facebook_scraper(value,scroll):
 
     time.sleep(10)
     driver.get(TARGET_URL)
-    time.sleep(10)
-    check_login_status(driver)
     sys.stdout.flush() 
 
     #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
@@ -774,6 +737,8 @@ def run_facebook_scraper(value,scroll):
 
 
                 time.sleep(10)  # Wait for profile to load
+                driver.execute_script("document.body.style.zoom='67%'")
+                time.sleep(10
     
 
                 elements = driver.find_elements(By.XPATH, '//a[.//span[text()="About"]]')
@@ -793,6 +758,8 @@ def run_facebook_scraper(value,scroll):
                 driver.execute_script("arguments[0].click();", about_btn)
                 print("✅ Clicked on About tab.")
 
+                time.sleep(5)
+                driver.execute_script("document.body.style.zoom='50%'")
                 time.sleep(5)
     
 
