@@ -51,200 +51,319 @@ def run_facebook_scraper(value,scroll):
     profile_lock = threading.Lock()
     import time
 
-    def start_driver(headless=True, user_session=None):
-        """
-        Creates a new browser instance by copying the saved profile
-        Perfect for multi-user deployment (Railway, etc.)
-        Each user gets their own isolated browser with copied cookies
-        """
+def load_cookies_into_browser(driver, platform):
+    """
+    Load saved cookies into isolated browser
+    platform: 'instagram', 'facebook', or 'x'
+    """
+    print(f"🔄 Loading {platform} cookies into browser...")
 
-        # Generate unique session ID for this user
-        if user_session is None:
-            user_session = str(uuid.uuid4())[:8]
-        sessionid=user_session
-        print(f"Session jo urre ga{sessionid}")
-        print(f"🚀 Creating new browser instance for session: {user_session}")
+    platform_configs = {
+        'instagram': {
+            'url': 'https://www.instagram.com',
+            'cookies_file': 'instagram_cookies.json',
+            'storage_file': 'instagram_local_storage.json'
+        },
+        'facebook': {
+            'url': 'https://www.facebook.com',
+            'cookies_file': 'facebook_cookies.json',
+            'storage_file': 'facebook_local_storage.json'
+        },
+        'x': {
+            'url': 'https://www.x.com',
+            'cookies_file': 'x_cookies.json',
+            'storage_file': 'x_local_storage.json'
+        }
+    }
 
-        # Create unique profile directory for this user
-        temp_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{user_session}")
+    if platform not in platform_configs:
+        print(f"❌ Unknown platform: {platform}")
+        return False
 
-        # Copy saved profile to user's unique directory
-        # with profile_lock:  # Prevent concurrent access issues
-        #     copy_saved_profile_to_user_session(temp_profile_dir)
+    config = platform_configs[platform]
 
-        # Create browser with copied profile
-        driver = create_isolated_browser(temp_profile_dir, headless, user_session)
+    try:
+        # Check if cookie file exists
+        if not os.path.exists(config['cookies_file']):
+            print(f"❌ Cookie file not found: {config['cookies_file']}")
+            return False
 
-        return driver,sessionid
+        # Navigate to platform first
+        driver.get(config['url'])
+        time.sleep(3)
 
-    def copy_saved_profile_to_user_session(user_profile_dir):
-        """
-        Copy the master saved profile to user's unique directory
-        This ensures each user gets their own browser instance with same cookies
-        """
+        # Clear existing cookies
+        driver.delete_all_cookies()
 
-        master_profile_folder = "facebook_scraper_profile"  # Your saved profile
+        # Load cookies from JSON
+        with open(config['cookies_file'], 'r') as f:
+            cookies = json.load(f)
 
-        try:
-            # Remove existing user profile if exists
-            if os.path.exists(user_profile_dir):
-                shutil.rmtree(user_profile_dir)
-
-            # Create user profile directory
-            os.makedirs(user_profile_dir, exist_ok=True)
-
-            # Copy essential files for maintaining login state
-            copy_essential_profile_files(master_profile_folder, user_profile_dir)
-
-            print(f"✅ Profile copied to isolated user directory")
-
-        except Exception as e:
-            print(f"⚠️ Profile copy failed: {e}")
-            # Create minimal profile structure
-            create_minimal_profile(user_profile_dir)
-
-    def copy_essential_profile_files(source_folder, dest_folder):
-        """
-        Copy only essential files needed for login state
-        Keeps the profile lightweight for cloud deployment
-        """
-
-        source_default = os.path.join(source_folder, "Default")
-        dest_default = os.path.join(dest_folder, "Default")
-
-        if not os.path.exists(source_default):
-            raise Exception("Source Default folder not found")
-
-        # Create destination Default folder
-        os.makedirs(dest_default, exist_ok=True)
-
-        # Essential files to copy for login state
-        essential_files = [
-            "Cookies",  # Main cookies file
-            "Local Storage",  # Local storage data
-            "Session Storage",  # Session storage
-            "Web Data",  # Saved passwords, autofill
-            "Login Data",  # Login information
-            "Preferences",  # Browser preferences
-            "Secure Preferences",  # Secure preferences
-            "Network/Cookies"  # Network cookies (if exists)
-        ]
-
-        copied_count = 0
-        for file_name in essential_files:
-            source_file = os.path.join(source_default, file_name)
-            dest_file = os.path.join(dest_default, file_name)
-
+        # Add cookies to browser
+        cookies_added = 0
+        for cookie in cookies:
             try:
-                if os.path.exists(source_file):
-                    if os.path.isdir(source_file):
-                        # Create directory structure and copy
-                        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-                        shutil.copytree(source_file, dest_file, dirs_exist_ok=True)
-                    else:
-                        # Copy file
-                        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-                        shutil.copy2(source_file, dest_file)
-
-                    copied_count += 1
-                    print(f"  ✓ Copied: {file_name}")
-
-            except Exception as e:
-                print(f"  ⚠️ Failed to copy {file_name}: {e}")
-
-        # Copy Local State file (important for Chrome)
-        try:
-            source_local_state = os.path.join(source_folder, "Local State")
-            dest_local_state = os.path.join(dest_folder, "Local State")
-
-            if os.path.exists(source_local_state):
-                shutil.copy2(source_local_state, dest_local_state)
-                copied_count += 1
-                print(f"  ✓ Copied: Local State")
-
-        except Exception as e:
-            print(f"  ⚠️ Failed to copy Local State: {e}")
-
-        print(f"📁 Copied {copied_count} essential files")
-
-    def create_minimal_profile(user_profile_dir):
-            """
-            Create minimal profile structure if copying fails
-            Will require manual login but prevents crashes
-            """
-            try:
-                default_dir = os.path.join(user_profile_dir, "Default")
-                os.makedirs(default_dir, exist_ok=True)
-    
-                # Create minimal preferences
-                preferences = {
-                    "profile": {
-                        "default_content_setting_values": {
-                            "notifications": 2
-                        },
-                        "managed_user_id": "",
-                        "name": "Person 1"
-                    }
+                # Clean cookie format for Selenium
+                cookie_clean = {
+                    'name': cookie['name'],
+                    'value': cookie['value'],
+                    'domain': cookie['domain'],
+                    'path': cookie.get('path', '/'),
                 }
-    
-                with open(os.path.join(default_dir, "Preferences"), 'w') as f:
-                    json.dump(preferences, f)
-    
-                print("📝 Created minimal profile structure")
-    
+
+                # Add optional fields
+                if 'secure' in cookie:
+                    cookie_clean['secure'] = cookie['secure']
+                if 'httpOnly' in cookie:
+                    cookie_clean['httpOnly'] = cookie['httpOnly']
+                if 'sameSite' in cookie and cookie['sameSite']:
+                    cookie_clean['sameSite'] = cookie['sameSite']
+
+                driver.add_cookie(cookie_clean)
+                cookies_added += 1
+
             except Exception as e:
-                print(f"❌ Failed to create minimal profile: {e}")
-    
-    def create_isolated_browser(user_profile_dir, headless, session_id):
-            options = Options()
-            if headless:
-                options.add_argument("--headless=new")
-            
-            # Essential Chrome options for Railway
-            # Use this for Railway instead:
-           # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--disable-gpu")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-plugins")
-            options.add_argument("--disable-web-security")
-            options.add_argument("--allow-running-insecure-content")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option('useAutomationExtension', False)
-            options.add_argument("--disable-features=VizDisplayCompositor")
-            
-            # Use user's isolated profile
-            options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
-            options.add_argument("--profile-directory=Default")
-            
-            # Set Chrome binary location for Railway
-            options.binary_location = "/usr/bin/google-chrome-stable"
-            
+                print(f"⚠️ Failed to add cookie {cookie['name']}: {e}")
+                continue
+
+        print(f"✅ Added {cookies_added}/{len(cookies)} cookies")
+
+        # Load local storage if available
+        if os.path.exists(config['storage_file']):
             try:
-                # For Railway/Linux - use the installed ChromeDriver
-                service = Service("/usr/bin/chromedriver")
-                driver = webdriver.Chrome(service=service, options=options)
-                
-                print(f"🌐 Navigating to Facebook with session {session_id}...")
-                driver.get("https://www.facebook.com")
-                time.sleep(3)
-                return driver
-                
+                with open(config['storage_file'], 'r') as f:
+                    local_storage = json.load(f)
+
+                # Set local storage items
+                for key, value in local_storage.items():
+                    try:
+                        # Escape quotes in the value
+                        escaped_value = str(value).replace("'", "\\'").replace('"', '\\"')
+                        driver.execute_script(f"localStorage.setItem('{key}', '{escaped_value}');")
+                    except Exception as e:
+                        print(f"⚠️ Failed to set local storage {key}: {e}")
+
+                print(f"✅ Loaded {len(local_storage)} local storage items")
+
             except Exception as e:
-                print(f"❌ Failed to create driver: {e}")
-                # Fallback to webdriver_manager for local development
-                try:
-                    service = Service(ChromeDriverManager().install())
-                    driver = webdriver.Chrome(service=service, options=options)
-                    driver.get("https://www.facebook.com")
-                    time.sleep(3)
-                    return driver
-                except Exception as e2:
-                    print(f"❌ Fallback also failed: {e2}")
-                    raise e2
+                print(f"⚠️ Could not load local storage: {e}")
+
+        # Refresh page to apply cookies
+        driver.refresh()
+        time.sleep(5)
+
+        print(f"🎉 Successfully loaded {platform} session!")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error loading {platform} cookies: {e}")
+        return False
+
+
+
+def start_driver(headless=True, user_session=None):
+    """
+    Creates a new browser instance by copying the saved profile
+    Perfect for multi-user deployment (Railway, etc.)
+    Each user gets their own isolated browser with copied cookies
+    """
+
+    # Generate unique session ID for this user
+    if user_session is None:
+        user_session = str(uuid.uuid4())[:8]
+
+    session=user_session
+    print(f"🚀 Creating new browser instance for session: {user_session}")
+
+    # Create unique profile directory for this user
+    temp_profile_dir = os.path.join(os.getcwd(), "user_profiles", f"user_{user_session}")
+
+    # Copy saved profile to user's unique directory
+    #with profile_lock:  # Prevent concurrent access issues
+      #  copy_saved_profile_to_user_session(temp_profile_dir)
+
+    # Create browser with copied profile
+    driver = create_isolated_browser(temp_profile_dir, headless, user_session)
+
+    return driver,session
+
+
+def copy_saved_profile_to_user_session(user_profile_dir):
+    """
+    Copy the master saved profile to user's unique directory
+    This ensures each user gets their own browser instance with same cookies
+    """
+
+    master_profile_folder = "x_scraper_profile"  # Your saved profile
+
+    try:
+        # Remove existing user profile if exists
+        if os.path.exists(user_profile_dir):
+            shutil.rmtree(user_profile_dir)
+
+        # Create user profile directory
+        os.makedirs(user_profile_dir, exist_ok=True)
+
+        # Copy essential files for maintaining login state
+        copy_essential_profile_files(master_profile_folder, user_profile_dir)
+
+        print(f"✅ Profile copied to isolated user directory")
+
+    except Exception as e:
+        print(f"⚠️ Profile copy failed: {e}")
+        # Create minimal profile structure
+        create_minimal_profile(user_profile_dir)
+
+
+def copy_essential_profile_files(source_folder, dest_folder):
+    """
+    Copy only essential files needed for login state
+    Keeps the profile lightweight for cloud deployment
+    """
+
+    source_default = os.path.join(source_folder, "Default")
+    dest_default = os.path.join(dest_folder, "Default")
+
+    if not os.path.exists(source_default):
+        raise Exception("Source Default folder not found")
+
+    # Create destination Default folder
+    os.makedirs(dest_default, exist_ok=True)
+
+    # Essential files to copy for login state
+    essential_files = [
+        "Cookies",  # Main cookies file
+        "Local Storage",  # Local storage data
+        "Session Storage",  # Session storage
+        "Web Data",  # Saved passwords, autofill
+        "Login Data",  # Login information
+        "Preferences",  # Browser preferences
+        "Secure Preferences",  # Secure preferences
+        "Network/Cookies"  # Network cookies (if exists)
+        "Cache",  # Add browser cache
+        "Code Cache",  # Add code cache
+        "GPUCache",  # Add GPU cache
+        "IndexedDB",  # Add IndexedDB data
+        "Service Worker"  # Add service worker data
+    ]
+
+    copied_count = 0
+    for file_name in essential_files:
+        source_file = os.path.join(source_default, file_name)
+        dest_file = os.path.join(dest_default, file_name)
+
+        try:
+            if os.path.exists(source_file):
+                if os.path.isdir(source_file):
+                    # Create directory structure and copy
+                    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+                    shutil.copytree(source_file, dest_file, dirs_exist_ok=True)
+                else:
+                    # Copy file
+                    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+                    shutil.copy2(source_file, dest_file)
+
+                copied_count += 1
+                print(f"  ✓ Copied: {file_name}")
+
+        except Exception as e:
+            print(f"  ⚠️ Failed to copy {file_name}: {e}")
+
+    # Copy Local State file (important for Chrome)
+    try:
+        source_local_state = os.path.join(source_folder, "Local State")
+        dest_local_state = os.path.join(dest_folder, "Local State")
+
+        if os.path.exists(source_local_state):
+            shutil.copy2(source_local_state, dest_local_state)
+            copied_count += 1
+            print(f"  ✓ Copied: Local State")
+
+    except Exception as e:
+        print(f"  ⚠️ Failed to copy Local State: {e}")
+
+    print(f"📁 Copied {copied_count} essential files")
+
+
+def create_minimal_profile(user_profile_dir):
+    """
+    Create minimal profile structure if copying fails
+    Will require manual login but prevents crashes
+    """
+    try:
+        default_dir = os.path.join(user_profile_dir, "Default")
+        os.makedirs(default_dir, exist_ok=True)
+
+        # Create minimal preferences
+        preferences = {
+            "profile": {
+                "default_content_setting_values": {
+                    "notifications": 2
+                },
+                "managed_user_id": "",
+                "name": "Person 1"
+            }
+        }
+
+        with open(os.path.join(default_dir, "Preferences"), 'w') as f:
+            json.dump(preferences, f)
+
+        print("📝 Created minimal profile structure")
+
+    except Exception as e:
+        print(f"❌ Failed to create minimal profile: {e}")
+
+
+def create_isolated_browser(user_profile_dir, headless, session_id):
+    options = Options()
+    if headless:
+        options.add_argument("--headless=new")
+    
+    # Essential Chrome options for Railway
+    # Use this for Railway instead:
+   # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+    options.add_argument("--disable-features=VizDisplayCompositor")
+    
+    # Use user's isolated profile
+    options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
+    options.add_argument("--profile-directory=Default")
+    
+    # Set Chrome binary location for Railway
+    options.binary_location = "/usr/bin/google-chrome-stable"
+    
+    try:
+        # For Railway/Linux - use the installed ChromeDriver
+        service = Service("/usr/bin/chromedriver")
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        print(f"🌐 Navigating to facebook with session {session_id}...")
+        driver.get("https://www.facebook.com")
+        time.sleep(3)
+        return driver
+        
+    except Exception as e:
+        print(f"❌ Failed to create driver: {e}")
+        # Fallback to webdriver_manager for local development
+        try:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
+            driver.get("https://x.com/login")
+            time.sleep(3)
+            return driver
+        except Exception as e2:
+            print(f"❌ Fallback also failed: {e2}")
+            raise e2
 
 
     def check_login_status(driver):
@@ -422,13 +541,8 @@ def run_facebook_scraper(value,scroll):
 
         post_urls = []
         seen_post_ids = set()  # Track unique post IDs to avoid duplicates
-        i=1
 
         for a in anchors:
-            if(i==1):
-                print(i)
-                i=i+1
-                continue
             try:
                 href = a.get_attribute("href")
                 if not href:
@@ -554,113 +668,6 @@ def run_facebook_scraper(value,scroll):
 
         return CSV_FILE1
 
-    def load_cookies_into_browser(driver, platform):
-        """
-        Load saved cookies into isolated browser
-        platform: 'instagram', 'facebook', or 'x'
-        """
-        print(f"🔄 Loading {platform} cookies into browser...")
-
-        platform_configs = {
-            'instagram': {
-                'url': 'https://www.instagram.com',
-                'cookies_file': 'instagram_cookies.json',
-                'storage_file': 'instagram_local_storage.json'
-            },
-            'facebook': {
-                'url': 'https://www.facebook.com',
-                'cookies_file': 'facebook_cookies.json',
-                'storage_file': 'facebook_local_storage.json'
-            },
-            'x': {
-                'url': 'https://www.x.com',
-                'cookies_file': 'x_cookies.json',
-                'storage_file': 'x_local_storage.json'
-            }
-        }
-
-        if platform not in platform_configs:
-            print(f"❌ Unknown platform: {platform}")
-            return False
-
-        config = platform_configs[platform]
-
-        try:
-            # Check if cookie file exists
-            if not os.path.exists(config['cookies_file']):
-                print(f"❌ Cookie file not found: {config['cookies_file']}")
-                return False
-
-            # Navigate to platform first
-            driver.get(config['url'])
-            time.sleep(3)
-
-            # Clear existing cookies
-            driver.delete_all_cookies()
-
-            # Load cookies from JSON
-            with open(config['cookies_file'], 'r') as f:
-                cookies = json.load(f)
-
-            # Add cookies to browser
-            cookies_added = 0
-            for cookie in cookies:
-                try:
-                    # Clean cookie format for Selenium
-                    cookie_clean = {
-                        'name': cookie['name'],
-                        'value': cookie['value'],
-                        'domain': cookie['domain'],
-                        'path': cookie.get('path', '/'),
-                    }
-
-                    # Add optional fields
-                    if 'secure' in cookie:
-                        cookie_clean['secure'] = cookie['secure']
-                    if 'httpOnly' in cookie:
-                        cookie_clean['httpOnly'] = cookie['httpOnly']
-                    if 'sameSite' in cookie and cookie['sameSite']:
-                        cookie_clean['sameSite'] = cookie['sameSite']
-
-                    driver.add_cookie(cookie_clean)
-                    cookies_added += 1
-
-                except Exception as e:
-                    print(f"⚠️ Failed to add cookie {cookie['name']}: {e}")
-                    continue
-
-            print(f"✅ Added {cookies_added}/{len(cookies)} cookies")
-
-            # Load local storage if available
-            if os.path.exists(config['storage_file']):
-                try:
-                    with open(config['storage_file'], 'r') as f:
-                        local_storage = json.load(f)
-
-                    # Set local storage items
-                    for key, value in local_storage.items():
-                        try:
-                            # Escape quotes in the value
-                            escaped_value = str(value).replace("'", "\\'").replace('"', '\\"')
-                            driver.execute_script(f"localStorage.setItem('{key}', '{escaped_value}');")
-                        except Exception as e:
-                            print(f"⚠️ Failed to set local storage {key}: {e}")
-
-                    print(f"✅ Loaded {len(local_storage)} local storage items")
-
-                except Exception as e:
-                    print(f"⚠️ Could not load local storage: {e}")
-
-            # Refresh page to apply cookies
-            driver.refresh()
-            time.sleep(5)
-
-            print(f"🎉 Successfully loaded {platform} session!")
-            return True
-
-        except Exception as e:
-            print(f"❌ Error loading {platform} cookies: {e}")
-            return False
 
     # --- Main Execution ---
     #facebook_login(EMAIL, PASSWORD)
