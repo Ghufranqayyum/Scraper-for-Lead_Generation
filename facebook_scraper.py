@@ -370,535 +370,535 @@ def run_facebook_scraper(value,scroll):
     #     driver.find_element(By.ID, "pass").send_keys(password)
     #     driver.find_element(By.NAME, "login").click()
     #     time.sleep(5)
-def get_facebook_post_count(driver, selectors):
-    """Count total posts using multiple selectors"""
-    max_count = 0
-    for selector in selectors:
-        try:
-            posts = driver.find_elements(By.CSS_SELECTOR, selector)
-            current_count = len(posts)
-            max_count = max(max_count, current_count)
-        except:
-            continue
-    return max_count
-
-def gentle_scroll_facebook(driver):
-    """Gentle scrolling that mimics human behavior"""
-    try:
-        # Method 1: Multiple small scrolls
-        viewport_height = driver.execute_script("return window.innerHeight")
-        scroll_amount = viewport_height // 3
-        
-        for i in range(4):
-            driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
-            time.sleep(random.uniform(1, 3))
-        
-        # Method 2: Scroll to bottom with smooth behavior
-        driver.execute_script("""
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: 'smooth'
-            });
-        """)
-        time.sleep(3)
-        
-        # Method 3: Trigger focus on feed elements
-        try:
-            feed_elements = driver.find_elements(By.CSS_SELECTOR, 'div[role="main"], div[role="feed"]')
-            if feed_elements:
-                feed_elements[0].click()
-        except:
-            pass
-        
-    except Exception as e:
-        print(f"   ❌ Error in gentle scroll: {e}")
-        # Fallback to basic scroll
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-
-def wait_for_facebook_loading(driver, loading_selectors, timeout=15):
-    """Wait for loading indicators to appear"""
-    try:
-        for selector in loading_selectors:
+    def get_facebook_post_count(driver, selectors):
+        """Count total posts using multiple selectors"""
+        max_count = 0
+        for selector in selectors:
             try:
-                WebDriverWait(driver, timeout).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                )
-                return True
-            except TimeoutException:
-                continue
-        return False
-    except:
-        return False
-
-def wait_for_facebook_loading_complete(driver, loading_selectors, timeout=120):
-    """Wait for all loading indicators to disappear"""
-    print(f"     ⌛ Waiting up to {timeout}s for loading to complete...")
-    start_time = time.time()
-    last_check_time = start_time
-    
-    while time.time() - start_time < timeout:
-        loading_found = False
-        
-        # Check for loading indicators
-        for selector in loading_selectors:
-            try:
-                elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                if elements:
-                    loading_found = True
-                    break
+                posts = driver.find_elements(By.CSS_SELECTOR, selector)
+                current_count = len(posts)
+                max_count = max(max_count, current_count)
             except:
                 continue
-        
-        # Also check for network activity
+        return max_count
+
+    def gentle_scroll_facebook(driver):
+        """Gentle scrolling that mimics human behavior"""
         try:
-            # Check if page is still making requests
-            network_active = driver.execute_script("""
-                return window.performance.getEntriesByType('resource')
-                    .some(entry => entry.responseEnd === 0);
+            # Method 1: Multiple small scrolls
+            viewport_height = driver.execute_script("return window.innerHeight")
+            scroll_amount = viewport_height // 3
+            
+            for i in range(4):
+                driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+                time.sleep(random.uniform(1, 3))
+            
+            # Method 2: Scroll to bottom with smooth behavior
+            driver.execute_script("""
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
             """)
-            if network_active:
-                loading_found = True
-        except:
-            pass
-        
-        if not loading_found:
-            # Wait a bit more to ensure stability
-            time.sleep(5)
-            elapsed = int(time.time() - start_time)
-            print(f"     ✅ Loading completed in {elapsed}s")
-            return True
-        
-        # Print status every 30 seconds
-        if time.time() - last_check_time > 30:
-            elapsed = int(time.time() - start_time)
-            print(f"     ⏳ Still loading... ({elapsed}s elapsed)")
-            last_check_time = time.time()
-            
-        time.sleep(3)
-    
-    print(f"     ⚠️ Loading timeout after {timeout}s")
-    return False
-
-def wait_for_new_facebook_posts(driver, post_selectors, current_count, timeout=120):
-    """Wait for new posts to appear"""
-    print(f"     🔍 Waiting up to {timeout}s for new posts...")
-    start_time = time.time()
-    last_check_time = start_time
-    
-    while time.time() - start_time < timeout:
-        new_count = get_facebook_post_count(driver, post_selectors)
-        
-        if new_count > current_count:
-            elapsed = int(time.time() - start_time)
-            print(f"     ✅ New posts appeared in {elapsed}s")
-            return new_count
-        
-        # Print status every 30 seconds
-        if time.time() - last_check_time > 30:
-            elapsed = int(time.time() - start_time)
-            print(f"     ⏳ Still waiting for posts... ({elapsed}s elapsed, count: {new_count})")
-            last_check_time = time.time()
-        
-        # Check every 5 seconds
-        time.sleep(5)
-    
-    elapsed = int(time.time() - start_time)
-    final_count = get_facebook_post_count(driver, post_selectors)
-    print(f"     ⏰ No new posts after {elapsed}s (final count: {final_count})")
-    return final_count
-
-def try_facebook_alternatives(driver, post_selectors, current_count):
-    """Try alternative methods to trigger content loading"""
-    print("     🔄 Trying alternative methods...")
-    
-    try:
-        # Method 1: Interact with feed area
-        try:
-            feed = driver.find_element(By.CSS_SELECTOR, 'div[role="main"], div[role="feed"], #mainContent')
-            ActionChains(driver).move_to_element(feed).click().perform()
             time.sleep(3)
-        except:
-            pass
-        
-        # Method 2: Multiple scroll techniques
-        techniques = [
-            "window.scrollTo(0, document.body.scrollHeight - 1000);",
-            "window.scrollTo(0, document.body.scrollHeight);",
-            "window.scrollBy(0, 500);",
-            "window.scrollTo(0, document.documentElement.scrollHeight);"
-        ]
-        
-        for technique in techniques:
-            driver.execute_script(technique)
-            time.sleep(2)
-        
-        # Method 3: Trigger events
-        driver.execute_script("""
-            ['scroll', 'resize', 'focus', 'click'].forEach(eventType => {
-                window.dispatchEvent(new Event(eventType));
-            });
-        """)
-        time.sleep(5)
-        
-        # Method 4: Focus on last visible posts
-        try:
-            posts = driver.find_elements(By.CSS_SELECTOR, 'div[role="article"], div[data-pagelet*="FeedUnit"]')
-            if len(posts) >= 3:
-                for post in posts[-3:]:
-                    try:
-                        ActionChains(driver).move_to_element(post).perform()
-                        time.sleep(1)
-                    except:
-                        continue
-        except:
-            pass
-        
-        # Method 5: Page Down keys
-        try:
-            ActionChains(driver).send_keys(Keys.END).perform()
-            time.sleep(2)
-            for _ in range(3):
-                ActionChains(driver).send_keys(Keys.PAGE_DOWN).perform()
-                time.sleep(1)
-        except:
-            pass
-        
-        # Check if any method worked
-        time.sleep(10)  # Give time for changes
-        new_count = get_facebook_post_count(driver, post_selectors)
-        success = new_count > current_count
-        
-        if success:
-            print(f"     ✅ Alternative methods added {new_count - current_count} posts")
-        else:
-            print("     ❌ Alternative methods didn't help")
             
-        return success
+            # Method 3: Trigger focus on feed elements
+            try:
+                feed_elements = driver.find_elements(By.CSS_SELECTOR, 'div[role="main"], div[role="feed"]')
+                if feed_elements:
+                    feed_elements[0].click()
+            except:
+                pass
+            
+        except Exception as e:
+            print(f"   ❌ Error in gentle scroll: {e}")
+            # Fallback to basic scroll
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    
+    def wait_for_facebook_loading(driver, loading_selectors, timeout=15):
+        """Wait for loading indicators to appear"""
+        try:
+            for selector in loading_selectors:
+                try:
+                    WebDriverWait(driver, timeout).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                    )
+                    return True
+                except TimeoutException:
+                    continue
+            return False
+        except:
+            return False
+    
+    def wait_for_facebook_loading_complete(driver, loading_selectors, timeout=120):
+        """Wait for all loading indicators to disappear"""
+        print(f"     ⌛ Waiting up to {timeout}s for loading to complete...")
+        start_time = time.time()
+        last_check_time = start_time
         
-    except Exception as e:
-        print(f"     ❌ Alternative methods failed: {e}")
+        while time.time() - start_time < timeout:
+            loading_found = False
+            
+            # Check for loading indicators
+            for selector in loading_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        loading_found = True
+                        break
+                except:
+                    continue
+            
+            # Also check for network activity
+            try:
+                # Check if page is still making requests
+                network_active = driver.execute_script("""
+                    return window.performance.getEntriesByType('resource')
+                        .some(entry => entry.responseEnd === 0);
+                """)
+                if network_active:
+                    loading_found = True
+            except:
+                pass
+            
+            if not loading_found:
+                # Wait a bit more to ensure stability
+                time.sleep(5)
+                elapsed = int(time.time() - start_time)
+                print(f"     ✅ Loading completed in {elapsed}s")
+                return True
+            
+            # Print status every 30 seconds
+            if time.time() - last_check_time > 30:
+                elapsed = int(time.time() - start_time)
+                print(f"     ⏳ Still loading... ({elapsed}s elapsed)")
+                last_check_time = time.time()
+                
+            time.sleep(3)
+        
+        print(f"     ⚠️ Loading timeout after {timeout}s")
         return False
-
-def normalize_facebook_url(url: str) -> str:
-    """Add the _rdr parameter if needed"""
-    if "pfbid" in url and "_rdr" not in url:
-        if "?" in url:
-            return url + "&_rdr"
-        else:
-            return url + "?_rdr"
-    return url
-
-def scroll_page_facebook_enhanced(driver, scroll_count, timeout_per_scroll=120):
-    """
-    Enhanced Facebook scrolling optimized for cloud environments like Railway
-    """
-    print(f"🔵 Starting Facebook-optimized scrolling (max {scroll_count} scrolls)")
-    print(f"⏰ Timeout per scroll: {timeout_per_scroll}s")
-    sys.stdout.flush()
     
-    # Facebook-specific selectors for posts and loading indicators
-    POST_SELECTORS = [
-        'div[data-pagelet*="FeedUnit"]',  # Main feed posts
-        'div[role="article"]',           # Article posts
-        'div[data-testid*="story"]',     # Story posts  
-        'div[aria-label*="post"]',       # Accessible posts
-        '.x1yztbdb',                     # Facebook's dynamic class for posts
-        '[data-visualcompletion="ignore-dynamic"]',  # Facebook posts
-        'div[data-ft]',                  # Posts with data-ft attribute
-        'div[data-testid="fbfeed_story"]' # Feed stories
-    ]
+    def wait_for_new_facebook_posts(driver, post_selectors, current_count, timeout=120):
+        """Wait for new posts to appear"""
+        print(f"     🔍 Waiting up to {timeout}s for new posts...")
+        start_time = time.time()
+        last_check_time = start_time
+        
+        while time.time() - start_time < timeout:
+            new_count = get_facebook_post_count(driver, post_selectors)
+            
+            if new_count > current_count:
+                elapsed = int(time.time() - start_time)
+                print(f"     ✅ New posts appeared in {elapsed}s")
+                return new_count
+            
+            # Print status every 30 seconds
+            if time.time() - last_check_time > 30:
+                elapsed = int(time.time() - start_time)
+                print(f"     ⏳ Still waiting for posts... ({elapsed}s elapsed, count: {new_count})")
+                last_check_time = time.time()
+            
+            # Check every 5 seconds
+            time.sleep(5)
+        
+        elapsed = int(time.time() - start_time)
+        final_count = get_facebook_post_count(driver, post_selectors)
+        print(f"     ⏰ No new posts after {elapsed}s (final count: {final_count})")
+        return final_count
     
-    LOADING_SELECTORS = [
-        'div[aria-label="Loading..."]',
-        'div[data-testid="react-loading-skeleton"]',
-        '.async_spinner',
-        '[role="progressbar"]',
-        'div[aria-busy="true"]',
-        '.spinner',
-        '[data-testid*="loading"]'
-    ]
+    def try_facebook_alternatives(driver, post_selectors, current_count):
+        """Try alternative methods to trigger content loading"""
+        print("     🔄 Trying alternative methods...")
+        
+        try:
+            # Method 1: Interact with feed area
+            try:
+                feed = driver.find_element(By.CSS_SELECTOR, 'div[role="main"], div[role="feed"], #mainContent')
+                ActionChains(driver).move_to_element(feed).click().perform()
+                time.sleep(3)
+            except:
+                pass
+            
+            # Method 2: Multiple scroll techniques
+            techniques = [
+                "window.scrollTo(0, document.body.scrollHeight - 1000);",
+                "window.scrollTo(0, document.body.scrollHeight);",
+                "window.scrollBy(0, 500);",
+                "window.scrollTo(0, document.documentElement.scrollHeight);"
+            ]
+            
+            for technique in techniques:
+                driver.execute_script(technique)
+                time.sleep(2)
+            
+            # Method 3: Trigger events
+            driver.execute_script("""
+                ['scroll', 'resize', 'focus', 'click'].forEach(eventType => {
+                    window.dispatchEvent(new Event(eventType));
+                });
+            """)
+            time.sleep(5)
+            
+            # Method 4: Focus on last visible posts
+            try:
+                posts = driver.find_elements(By.CSS_SELECTOR, 'div[role="article"], div[data-pagelet*="FeedUnit"]')
+                if len(posts) >= 3:
+                    for post in posts[-3:]:
+                        try:
+                            ActionChains(driver).move_to_element(post).perform()
+                            time.sleep(1)
+                        except:
+                            continue
+            except:
+                pass
+            
+            # Method 5: Page Down keys
+            try:
+                ActionChains(driver).send_keys(Keys.END).perform()
+                time.sleep(2)
+                for _ in range(3):
+                    ActionChains(driver).send_keys(Keys.PAGE_DOWN).perform()
+                    time.sleep(1)
+            except:
+                pass
+            
+            # Check if any method worked
+            time.sleep(10)  # Give time for changes
+            new_count = get_facebook_post_count(driver, post_selectors)
+            success = new_count > current_count
+            
+            if success:
+                print(f"     ✅ Alternative methods added {new_count - current_count} posts")
+            else:
+                print("     ❌ Alternative methods didn't help")
+                
+            return success
+            
+        except Exception as e:
+            print(f"     ❌ Alternative methods failed: {e}")
+            return False
     
-    # Initial setup
-    print("⏳ Waiting for Facebook page to stabilize...")
-    time.sleep(15)  # Let Facebook fully load initially
+    def normalize_facebook_url(url: str) -> str:
+        """Add the _rdr parameter if needed"""
+        if "pfbid" in url and "_rdr" not in url:
+            if "?" in url:
+                return url + "&_rdr"
+            else:
+                return url + "?_rdr"
+        return url
     
-    initial_posts = get_facebook_post_count(driver, POST_SELECTORS)
-    print(f"📊 Initial posts detected: {initial_posts}")
-    
-    successful_scrolls = 0
-    consecutive_failures = 0
-    last_post_count = initial_posts
-    
-    for scroll_num in range(scroll_count):
-        print(f"\n🌀 Facebook scroll {scroll_num + 1}/{scroll_count}")
+    def scroll_page_facebook_enhanced(driver, scroll_count, timeout_per_scroll=120):
+        """
+        Enhanced Facebook scrolling optimized for cloud environments like Railway
+        """
+        print(f"🔵 Starting Facebook-optimized scrolling (max {scroll_count} scrolls)")
+        print(f"⏰ Timeout per scroll: {timeout_per_scroll}s")
         sys.stdout.flush()
         
-        try:
-            # Step 1: Gentle scroll to trigger loading
-            print("   📱 Performing gentle scroll...")
-            gentle_scroll_facebook(driver)
+        # Facebook-specific selectors for posts and loading indicators
+        POST_SELECTORS = [
+            'div[data-pagelet*="FeedUnit"]',  # Main feed posts
+            'div[role="article"]',           # Article posts
+            'div[data-testid*="story"]',     # Story posts  
+            'div[aria-label*="post"]',       # Accessible posts
+            '.x1yztbdb',                     # Facebook's dynamic class for posts
+            '[data-visualcompletion="ignore-dynamic"]',  # Facebook posts
+            'div[data-ft]',                  # Posts with data-ft attribute
+            'div[data-testid="fbfeed_story"]' # Feed stories
+        ]
+        
+        LOADING_SELECTORS = [
+            'div[aria-label="Loading..."]',
+            'div[data-testid="react-loading-skeleton"]',
+            '.async_spinner',
+            '[role="progressbar"]',
+            'div[aria-busy="true"]',
+            '.spinner',
+            '[data-testid*="loading"]'
+        ]
+        
+        # Initial setup
+        print("⏳ Waiting for Facebook page to stabilize...")
+        time.sleep(15)  # Let Facebook fully load initially
+        
+        initial_posts = get_facebook_post_count(driver, POST_SELECTORS)
+        print(f"📊 Initial posts detected: {initial_posts}")
+        
+        successful_scrolls = 0
+        consecutive_failures = 0
+        last_post_count = initial_posts
+        
+        for scroll_num in range(scroll_count):
+            print(f"\n🌀 Facebook scroll {scroll_num + 1}/{scroll_count}")
+            sys.stdout.flush()
             
-            # Step 2: Wait for loading indicators
-            print("   🔍 Checking for loading indicators...")
-            loading_detected = wait_for_facebook_loading(driver, LOADING_SELECTORS, timeout=15)
-            
-            if loading_detected:
-                print("   ⏳ Loading detected, waiting for completion...")
-                wait_for_facebook_loading_complete(driver, LOADING_SELECTORS, timeout=timeout_per_scroll)
-            else:
-                print("   ⚠️ No loading indicators found, using time-based wait...")
-                time.sleep(30)  # Fallback wait
-            
-            # Step 3: Wait for new posts to appear
-            print("   🔍 Checking for new posts...")
-            new_post_count = wait_for_new_facebook_posts(
-                driver, POST_SELECTORS, last_post_count, timeout=timeout_per_scroll
-            )
-            
-            if new_post_count > last_post_count:
-                posts_added = new_post_count - last_post_count
-                print(f"   ✅ Success! Added {posts_added} posts ({last_post_count} → {new_post_count})")
-                successful_scrolls += 1
-                consecutive_failures = 0
-                last_post_count = new_post_count
+            try:
+                # Step 1: Gentle scroll to trigger loading
+                print("   📱 Performing gentle scroll...")
+                gentle_scroll_facebook(driver)
                 
-                # Small pause to let Facebook settle
-                time.sleep(random.uniform(5, 10))
+                # Step 2: Wait for loading indicators
+                print("   🔍 Checking for loading indicators...")
+                loading_detected = wait_for_facebook_loading(driver, LOADING_SELECTORS, timeout=15)
                 
-            else:
+                if loading_detected:
+                    print("   ⏳ Loading detected, waiting for completion...")
+                    wait_for_facebook_loading_complete(driver, LOADING_SELECTORS, timeout=timeout_per_scroll)
+                else:
+                    print("   ⚠️ No loading indicators found, using time-based wait...")
+                    time.sleep(30)  # Fallback wait
+                
+                # Step 3: Wait for new posts to appear
+                print("   🔍 Checking for new posts...")
+                new_post_count = wait_for_new_facebook_posts(
+                    driver, POST_SELECTORS, last_post_count, timeout=timeout_per_scroll
+                )
+                
+                if new_post_count > last_post_count:
+                    posts_added = new_post_count - last_post_count
+                    print(f"   ✅ Success! Added {posts_added} posts ({last_post_count} → {new_post_count})")
+                    successful_scrolls += 1
+                    consecutive_failures = 0
+                    last_post_count = new_post_count
+                    
+                    # Small pause to let Facebook settle
+                    time.sleep(random.uniform(5, 10))
+                    
+                else:
+                    consecutive_failures += 1
+                    print(f"   ⚠️ No new posts loaded (failure {consecutive_failures}/3)")
+                    
+                    if consecutive_failures >= 2:
+                        print("   🔧 Trying alternative loading methods...")
+                        alternative_success = try_facebook_alternatives(driver, POST_SELECTORS, last_post_count)
+                        
+                        if alternative_success:
+                            new_count = get_facebook_post_count(driver, POST_SELECTORS)
+                            if new_count > last_post_count:
+                                print(f"   ✅ Alternative method worked! {last_post_count} → {new_count}")
+                                successful_scrolls += 1
+                                consecutive_failures = 0
+                                last_post_count = new_count
+                    
+                    if consecutive_failures >= 3:
+                        print("   ⏹️ Stopping: No new content after multiple attempts")
+                        break
+                    
+                    # Progressive backoff
+                    backoff_time = min(20 + (consecutive_failures * 10), 60)
+                    print(f"   ⏸️ Backing off for {backoff_time}s...")
+                    time.sleep(backoff_time)
+            
+            except Exception as e:
+                print(f"   ❌ Error in scroll {scroll_num + 1}: {str(e)}")
                 consecutive_failures += 1
-                print(f"   ⚠️ No new posts loaded (failure {consecutive_failures}/3)")
-                
-                if consecutive_failures >= 2:
-                    print("   🔧 Trying alternative loading methods...")
-                    alternative_success = try_facebook_alternatives(driver, POST_SELECTORS, last_post_count)
-                    
-                    if alternative_success:
-                        new_count = get_facebook_post_count(driver, POST_SELECTORS)
-                        if new_count > last_post_count:
-                            print(f"   ✅ Alternative method worked! {last_post_count} → {new_count}")
-                            successful_scrolls += 1
-                            consecutive_failures = 0
-                            last_post_count = new_count
-                
                 if consecutive_failures >= 3:
-                    print("   ⏹️ Stopping: No new content after multiple attempts")
                     break
-                
-                # Progressive backoff
-                backoff_time = min(20 + (consecutive_failures * 10), 60)
-                print(f"   ⏸️ Backing off for {backoff_time}s...")
-                time.sleep(backoff_time)
+                time.sleep(15)
         
-        except Exception as e:
-            print(f"   ❌ Error in scroll {scroll_num + 1}: {str(e)}")
-            consecutive_failures += 1
-            if consecutive_failures >= 3:
-                break
-            time.sleep(15)
-    
-    final_posts = get_facebook_post_count(driver, POST_SELECTORS)
-    total_loaded = final_posts - initial_posts
-    
-    print(f"\n🏁 Facebook scrolling completed!")
-    print(f"📈 Total posts loaded: {total_loaded} ({initial_posts} → {final_posts})")
-    print(f"✅ Successful scrolls: {successful_scrolls}/{scroll_count}")
-    sys.stdout.flush()
+        final_posts = get_facebook_post_count(driver, POST_SELECTORS)
+        total_loaded = final_posts - initial_posts
+        
+        print(f"\n🏁 Facebook scrolling completed!")
+        print(f"📈 Total posts loaded: {total_loaded} ({initial_posts} → {final_posts})")
+        print(f"✅ Successful scrolls: {successful_scrolls}/{scroll_count}")
+        sys.stdout.flush()
+        
+        
     
     
-
-
-        
-        # last_height = driver.execute_script("return document.body.scrollHeight")
-        # for i in range(SCROLL_COUNT):
-        #     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        #     print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
-        #     time.sleep(50)
-        #     new_height = driver.execute_script("return document.body.scrollHeight")
-        #     time.sleep(10)
-        #     if new_height == last_height:
-        #         print("⏹️ No more content to load.")
-        #         sys.stdout.flush() 
-        #         #break
-        #     last_height = new_height
-        
-    #     """
-    #     Enhanced scrolling function optimized for cloud environments
-        
-    #     Args:
-    #         driver: Selenium WebDriver instance
-    #         scroll_count: Maximum number of scrolls to perform
-    #         base_wait: Base wait time between scrolls
-    #         max_wait: Maximum wait time for content to load
-    #     """
-    #     base_wait=15
-    #     max_wait=45
-    #     print(f"🚀 Starting enhanced scrolling (max {SCROLL_COUNT} scrolls)")
-    #     sys.stdout.flush()
-        
-    #     last_height = driver.execute_script("return document.body.scrollHeight")
-    #     successful_scrolls = 0
-    #     consecutive_no_change = 0
-        
-    #     for i in range(SCROLL_COUNT):
-    #         try:
-    #             print(f"🌀 Scroll attempt {i + 1}/{SCROLL_COUNT}")
-    #             sys.stdout.flush()
-                
-    #             # Scroll to bottom with smooth behavior
-    #             driver.execute_script("""
-    #                 window.scrollTo({
-    #                     top: document.body.scrollHeight,
-    #                     behavior: 'smooth'
-    #                 });
-    #             """)
-                
-    #             # Wait for initial scroll to complete
-    #             time.sleep(2)
-                
-    #             # Check for loading indicators and wait for them to disappear
-    #             loading_selectors = [
-    #                 '[data-testid*="loading"]',
-    #                 '.loading',
-    #                 '.spinner',
-    #                 '[aria-label*="Loading"]',
-    #                 '.skeleton',
-    #                 '[class*="loading"]',
-    #                 '[class*="spinner"]'
-    #             ]
-                
-    #             wait_time = base_wait
-    #             content_loaded = False
-                
-    #             # Dynamic waiting with multiple strategies
-    #             for attempt in range(3):
-    #                 print(f"   ⏳ Waiting for content... (attempt {attempt + 1}/3)")
-    #                 sys.stdout.flush()
+            
+            # last_height = driver.execute_script("return document.body.scrollHeight")
+            # for i in range(SCROLL_COUNT):
+            #     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            #     print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
+            #     time.sleep(50)
+            #     new_height = driver.execute_script("return document.body.scrollHeight")
+            #     time.sleep(10)
+            #     if new_height == last_height:
+            #         print("⏹️ No more content to load.")
+            #         sys.stdout.flush() 
+            #         #break
+            #     last_height = new_height
+            
+        #     """
+        #     Enhanced scrolling function optimized for cloud environments
+            
+        #     Args:
+        #         driver: Selenium WebDriver instance
+        #         scroll_count: Maximum number of scrolls to perform
+        #         base_wait: Base wait time between scrolls
+        #         max_wait: Maximum wait time for content to load
+        #     """
+        #     base_wait=15
+        #     max_wait=45
+        #     print(f"🚀 Starting enhanced scrolling (max {SCROLL_COUNT} scrolls)")
+        #     sys.stdout.flush()
+            
+        #     last_height = driver.execute_script("return document.body.scrollHeight")
+        #     successful_scrolls = 0
+        #     consecutive_no_change = 0
+            
+        #     for i in range(SCROLL_COUNT):
+        #         try:
+        #             print(f"🌀 Scroll attempt {i + 1}/{SCROLL_COUNT}")
+        #             sys.stdout.flush()
                     
-    #                 # Strategy 1: Wait for loading indicators to disappear
-    #                 try:
-    #                     for selector in loading_selectors:
-    #                         WebDriverWait(driver, 2).until_not(
-    #                             EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-    #                         )
-    #                 except TimeoutException:
-    #                     pass  # No loading indicators found or they didn't disappear
+        #             # Scroll to bottom with smooth behavior
+        #             driver.execute_script("""
+        #                 window.scrollTo({
+        #                     top: document.body.scrollHeight,
+        #                     behavior: 'smooth'
+        #                 });
+        #             """)
                     
-    #                 # Strategy 2: Wait for network idle (no new requests for 2 seconds)
-    #                 try:
-    #                     driver.execute_script("""
-    #                         return new Promise((resolve) => {
-    #                             let requestCount = 0;
-    #                             let lastRequestTime = Date.now();
-                                
-    #                             const observer = new PerformanceObserver((list) => {
-    #                                 requestCount++;
-    #                                 lastRequestTime = Date.now();
-    #                             });
-    #                             observer.observe({entryTypes: ['resource']});
-                                
-    #                             const checkIdle = () => {
-    #                                 if (Date.now() - lastRequestTime > 2000) {
-    #                                     observer.disconnect();
-    #                                     resolve(true);
-    #                                 } else {
-    #                                     setTimeout(checkIdle, 500);
-    #                                 }
-    #                             };
-                                
-    #                             setTimeout(() => {
-    #                                 observer.disconnect();
-    #                                 resolve(false);
-    #                             }, 10000);
-                                
-    #                             checkIdle();
-    #                         });
-    #                     """)
-    #                     time.sleep(2)
-    #                 except:
-    #                     pass
+        #             # Wait for initial scroll to complete
+        #             time.sleep(2)
                     
-    #                 # Strategy 3: Check if page height changed
-    #                 current_height = driver.execute_script("return document.body.scrollHeight")
-    #                 if current_height > last_height:
-    #                     content_loaded = True
-    #                     break
+        #             # Check for loading indicators and wait for them to disappear
+        #             loading_selectors = [
+        #                 '[data-testid*="loading"]',
+        #                 '.loading',
+        #                 '.spinner',
+        #                 '[aria-label*="Loading"]',
+        #                 '.skeleton',
+        #                 '[class*="loading"]',
+        #                 '[class*="spinner"]'
+        #             ]
                     
-    #                 # Progressive wait time increase
-    #                 time.sleep(min(wait_time + (attempt * 5), max_wait))
-                
-    #             # Final height check
-    #             new_height = driver.execute_script("return document.body.scrollHeight")
-                
-    #             if new_height > last_height:
-    #                 print(f"   ✅ New content loaded! Height: {last_height} → {new_height}")
-    #                 successful_scrolls += 1
-    #                 consecutive_no_change = 0
-    #                 last_height = new_height
-    #             else:
-    #                 consecutive_no_change += 1
-    #                 print(f"   ⚠️ No new content detected (attempt {consecutive_no_change}/3)")
+        #             wait_time = base_wait
+        #             content_loaded = False
                     
-    #                 # Try alternative scroll methods if no content is loading
-    #                 if consecutive_no_change >= 2:
-    #                     print("   🔄 Trying alternative scroll methods...")
+        #             # Dynamic waiting with multiple strategies
+        #             for attempt in range(3):
+        #                 print(f"   ⏳ Waiting for content... (attempt {attempt + 1}/3)")
+        #                 sys.stdout.flush()
                         
-    #                     # Method 1: Scroll by viewport height increments
-    #                     viewport_height = driver.execute_script("return window.innerHeight")
-    #                     for scroll_step in range(3):
-    #                         driver.execute_script(f"window.scrollBy(0, {viewport_height});")
-    #                         time.sleep(2)
+        #                 # Strategy 1: Wait for loading indicators to disappear
+        #                 try:
+        #                     for selector in loading_selectors:
+        #                         WebDriverWait(driver, 2).until_not(
+        #                             EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+        #                         )
+        #                 except TimeoutException:
+        #                     pass  # No loading indicators found or they didn't disappear
                         
-    #                     # Method 2: Trigger scroll events manually
-    #                     driver.execute_script("""
-    #                         window.dispatchEvent(new Event('scroll'));
-    #                         window.dispatchEvent(new Event('resize'));
-    #                     """)
-    #                     time.sleep(3)
+        #                 # Strategy 2: Wait for network idle (no new requests for 2 seconds)
+        #                 try:
+        #                     driver.execute_script("""
+        #                         return new Promise((resolve) => {
+        #                             let requestCount = 0;
+        #                             let lastRequestTime = Date.now();
+                                    
+        #                             const observer = new PerformanceObserver((list) => {
+        #                                 requestCount++;
+        #                                 lastRequestTime = Date.now();
+        #                             });
+        #                             observer.observe({entryTypes: ['resource']});
+                                    
+        #                             const checkIdle = () => {
+        #                                 if (Date.now() - lastRequestTime > 2000) {
+        #                                     observer.disconnect();
+        #                                     resolve(true);
+        #                                 } else {
+        #                                     setTimeout(checkIdle, 500);
+        #                                 }
+        #                             };
+                                    
+        #                             setTimeout(() => {
+        #                                 observer.disconnect();
+        #                                 resolve(false);
+        #                             }, 10000);
+                                    
+        #                             checkIdle();
+        #                         });
+        #                     """)
+        #                     time.sleep(2)
+        #                 except:
+        #                     pass
                         
-    #                     # Method 3: Focus on different elements to trigger lazy loading
-    #                     try:
-    #                         elements = driver.find_elements(By.CSS_SELECTOR, "div, article, section")
-    #                         if elements:
-    #                             random.choice(elements[-10:]).click()
-    #                             time.sleep(2)
-    #                     except:
-    #                         pass
+        #                 # Strategy 3: Check if page height changed
+        #                 current_height = driver.execute_script("return document.body.scrollHeight")
+        #                 if current_height > last_height:
+        #                     content_loaded = True
+        #                     break
                         
-    #                     # Check again after alternative methods
-    #                     final_height = driver.execute_script("return document.body.scrollHeight")
-    #                     if final_height > new_height:
-    #                         print(f"   ✅ Alternative method worked! Height: {new_height} → {final_height}")
-    #                         successful_scrolls += 1
-    #                         consecutive_no_change = 0
-    #                         last_height = final_height
+        #                 # Progressive wait time increase
+        #                 time.sleep(min(wait_time + (attempt * 5), max_wait))
+                    
+        #             # Final height check
+        #             new_height = driver.execute_script("return document.body.scrollHeight")
+                    
+        #             if new_height > last_height:
+        #                 print(f"   ✅ New content loaded! Height: {last_height} → {new_height}")
+        #                 successful_scrolls += 1
+        #                 consecutive_no_change = 0
+        #                 last_height = new_height
+        #             else:
+        #                 consecutive_no_change += 1
+        #                 print(f"   ⚠️ No new content detected (attempt {consecutive_no_change}/3)")
                         
-    #                 # Break if no content for 3 consecutive attempts
-    #                 if consecutive_no_change >= 3:
-    #                     print("   ⏹️ No more content to load after multiple attempts.")
-    #                     break
-                
-    #             sys.stdout.flush()
-                
-    #         except Exception as e:
-    #             print(f"   ❌ Error during scroll {i + 1}: {str(e)}")
-    #             consecutive_no_change += 1
-    #             if consecutive_no_change >= 3:
-    #                 break
-    #             time.sleep(5)
-        
-    #     print(f"🏁 Scrolling completed! Successful scrolls: {successful_scrolls}/{scroll_count}")
-    #     sys.stdout.flush()
-
-    # def normalize_facebook_url(url: str) -> str:
-    #     if "pfbid" in url and "_rdr" not in url:
-    #         if "?" in url:
-    #             return url + "&_rdr"
-    #         else:
-    #             return url + "?_rdr"
-    #     return url
-
-
+        #                 # Try alternative scroll methods if no content is loading
+        #                 if consecutive_no_change >= 2:
+        #                     print("   🔄 Trying alternative scroll methods...")
+                            
+        #                     # Method 1: Scroll by viewport height increments
+        #                     viewport_height = driver.execute_script("return window.innerHeight")
+        #                     for scroll_step in range(3):
+        #                         driver.execute_script(f"window.scrollBy(0, {viewport_height});")
+        #                         time.sleep(2)
+                            
+        #                     # Method 2: Trigger scroll events manually
+        #                     driver.execute_script("""
+        #                         window.dispatchEvent(new Event('scroll'));
+        #                         window.dispatchEvent(new Event('resize'));
+        #                     """)
+        #                     time.sleep(3)
+                            
+        #                     # Method 3: Focus on different elements to trigger lazy loading
+        #                     try:
+        #                         elements = driver.find_elements(By.CSS_SELECTOR, "div, article, section")
+        #                         if elements:
+        #                             random.choice(elements[-10:]).click()
+        #                             time.sleep(2)
+        #                     except:
+        #                         pass
+                            
+        #                     # Check again after alternative methods
+        #                     final_height = driver.execute_script("return document.body.scrollHeight")
+        #                     if final_height > new_height:
+        #                         print(f"   ✅ Alternative method worked! Height: {new_height} → {final_height}")
+        #                         successful_scrolls += 1
+        #                         consecutive_no_change = 0
+        #                         last_height = final_height
+                            
+        #                 # Break if no content for 3 consecutive attempts
+        #                 if consecutive_no_change >= 3:
+        #                     print("   ⏹️ No more content to load after multiple attempts.")
+        #                     break
+                    
+        #             sys.stdout.flush()
+                    
+        #         except Exception as e:
+        #             print(f"   ❌ Error during scroll {i + 1}: {str(e)}")
+        #             consecutive_no_change += 1
+        #             if consecutive_no_change >= 3:
+        #                 break
+        #             time.sleep(5)
+            
+        #     print(f"🏁 Scrolling completed! Successful scrolls: {successful_scrolls}/{scroll_count}")
+        #     sys.stdout.flush()
+    
+        # def normalize_facebook_url(url: str) -> str:
+        #     if "pfbid" in url and "_rdr" not in url:
+        #         if "?" in url:
+        #             return url + "&_rdr"
+        #         else:
+        #             return url + "?_rdr"
+        #     return url
+    
+    
 
 
 
