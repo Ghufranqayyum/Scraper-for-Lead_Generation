@@ -1,0 +1,15 @@
+{
+  "RSTData": "{}",
+  "Session": "6vwhbu:1756960381062",
+  "_oz_bandwidthAndTTFBSamples": "{\"b\":[],\"t\":[]}",
+  "_oz_bandwidthEstimate": "10000000",
+  "ares_last_signal_flush": "1756096324685",
+  "banzai:last_storage_flush": "1756960295871",
+  "bdz_playback_state": "{\"session_key\":\"meqmes7h\",\"buffer_length\":60}",
+  "hb_timestamp": "1756960294662",
+  "last_headload_time": "1756960346928",
+  "mw_encrypted_backups_restore_upsell_first_impression_time_key": "1756960322437",
+  "screen_time_period_logging_facebook": "{\"actorId\":\"100052594688633\",\"currentIntervalLastTick\":1756960351,\"currentIntervalStart\":1756960325,\"initRemoteAgg\":{\"timestamp\":-1,\"today_s\":-1},\"intervals\":[],\"lastCallbackAttempt\":1756960325,\"localStorageId\":\"82306425\",\"syncedL24HS\":null,\"syncedTodayS\":null}",
+  "signal_flush_timestamp": "1756960294900",
+  "topicsLastReportingTime": "1756960330219"
+}
