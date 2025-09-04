@@ -1075,7 +1075,7 @@ def run_facebook_scraper(value,scroll):
         time.sleep(10)
         initial_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"]'))
         print(f"📊 After additional wait: {initial_posts} posts")
-        scroll_page_facebook_enhanced(driver, SCROLL-COUNT)
+        scroll_page_facebook_enhanced(driver, SCROLL_COUNT)
         sys.stdout.flush() 
     except Exception as e:
         print(f"❌ Error during scrolling: {e}")
