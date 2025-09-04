@@ -738,7 +738,7 @@ def run_facebook_scraper(value,scroll):
 
                 time.sleep(10)  # Wait for profile to load
                 driver.execute_script("document.body.style.zoom='67%'")
-                time.sleep(10
+                time.sleep(10)
     
 
                 elements = driver.find_elements(By.XPATH, '//a[.//span[text()="About"]]')
