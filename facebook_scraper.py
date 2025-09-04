@@ -614,6 +614,9 @@ def run_facebook_scraper(value,scroll):
 
 
                 time.sleep(10)  # Wait for profile to load
+                driver.execute_script("document.body.style.zoom='60%'")
+                time.sleep(10)
+                
                 
     
 
@@ -635,7 +638,9 @@ def run_facebook_scraper(value,scroll):
                 print("✅ Clicked on About tab.")
                 sys.stdout.flush() 
                 
-                time.sleep(5)
+                time.sleep(10)
+                driver.execute_script("document.body.style.zoom='50%'")
+                time.sleep(10)
     
 
                 # Now extract email/contact as usual
