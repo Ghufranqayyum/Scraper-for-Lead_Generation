@@ -373,14 +373,15 @@ def run_facebook_scraper(value,scroll):
     def scroll_page():
         last_height = driver.execute_script("return document.body.scrollHeight")
         for i in range(SCROLL_COUNT):
-            time.sleep(10)
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
-            time.sleep(30)
+            time.sleep(50)
             new_height = driver.execute_script("return document.body.scrollHeight")
+            time.sleep(10)
             if new_height == last_height:
                 print("⏹️ No more content to load.")
-                break
+                sys.stdout.flush() 
+                #break
             last_height = new_height
         
     #     """
