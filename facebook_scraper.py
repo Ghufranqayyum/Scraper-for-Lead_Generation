@@ -1072,17 +1072,11 @@ def run_facebook_scraper(value,scroll):
     time.sleep(20)  # Let Facebook completely load
     sys.stdout.flush() 
     try:
-        # Check if we can see posts before scrolling
+        time.sleep(10)
         initial_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"]'))
-        print(f"📊 Can see {initial_posts} initial posts")
-        
-        if initial_posts == 0:
-            print("⚠️ No posts visible, page may not have loaded properly")
-            time.sleep(30)
-            initial_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"]'))
-            print(f"📊 After additional wait: {initial_posts} posts")
-            scroll_page_facebook_enhanced(driver, SCROLL-COUNT)
-            sys.stdout.flush() 
+        print(f"📊 After additional wait: {initial_posts} posts")
+        scroll_page_facebook_enhanced(driver, SCROLL-COUNT)
+        sys.stdout.flush() 
     except Exception as e:
         print(f"❌ Error during scrolling: {e}")
         print("🔄 Continuing with available posts...")
