@@ -241,7 +241,7 @@ def send_email():
     sender_password = data.get('sender_password', '')
     recipient_email = data.get('recipient_email', '')
     smtp_server = data.get('smtp_server', 'smtp.gmail.com')
-    smtp_port = int(data.get('smtp_port', 587))
+    smtp_port = int(data.get('smtp_port', 465)) 
 
     if not all([sender_email, sender_password, recipient_email]):
         return jsonify({'success': False, 'error': 'Please fill in all email fields'})
@@ -305,8 +305,15 @@ Multi-Platform Scraper Tool
             msg.attach(part)
 
         # Send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
+        # In send_email_smtp function:
+        if smtp_port == 465:
+            # Use SSL
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+            # No need for starttls() with SSL
+        else:
+            # Use TLS (original approach)
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, recipient_email, msg.as_string())
         server.quit()
