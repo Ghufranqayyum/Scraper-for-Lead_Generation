@@ -745,8 +745,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
 
 
                 time.sleep(10)  # Wait for profile to load
-                driver.execute_script("document.body.style.zoom='67%'")
-                time.sleep(10)
+                
     
 
                 elements = driver.find_elements(By.XPATH, '//a[.//span[text()="About"]]')
@@ -766,8 +765,7 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
                 driver.execute_script("arguments[0].click();", about_btn)
                 print("✅ Clicked on About tab.")
                 sys.stdout.flush() 
-                time.sleep(5)
-                driver.execute_script("document.body.style.zoom='50%'")
+                
                 time.sleep(5)
     
 
