@@ -382,16 +382,16 @@ def run_facebook_scraper(value,scroll):
         """
         base_wait=15
         max_wait=45
-        print(f"🚀 Starting enhanced scrolling (max {scroll_count} scrolls)")
+        print(f"🚀 Starting enhanced scrolling (max {SCROLL_COUNT} scrolls)")
         sys.stdout.flush()
         
         last_height = driver.execute_script("return document.body.scrollHeight")
         successful_scrolls = 0
         consecutive_no_change = 0
         
-        for i in range(scroll_count):
+        for i in range(SCROLL_COUNT):
             try:
-                print(f"🌀 Scroll attempt {i + 1}/{scroll_count}")
+                print(f"🌀 Scroll attempt {i + 1}/{SCROLL_COUNT}")
                 sys.stdout.flush()
                 
                 # Scroll to bottom with smooth behavior
