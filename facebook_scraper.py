@@ -371,181 +371,193 @@ def run_facebook_scraper(value,scroll):
     #     driver.find_element(By.NAME, "login").click()
     #     time.sleep(5)
     def scroll_page():
-        """
-        Enhanced scrolling function optimized for cloud environments
-        
-        Args:
-            driver: Selenium WebDriver instance
-            scroll_count: Maximum number of scrolls to perform
-            base_wait: Base wait time between scrolls
-            max_wait: Maximum wait time for content to load
-        """
-        base_wait=15
-        max_wait=45
-        print(f"🚀 Starting enhanced scrolling (max {SCROLL_COUNT} scrolls)")
-        sys.stdout.flush()
-        
         last_height = driver.execute_script("return document.body.scrollHeight")
-        successful_scrolls = 0
-        consecutive_no_change = 0
-        
         for i in range(SCROLL_COUNT):
-            try:
-                print(f"🌀 Scroll attempt {i + 1}/{SCROLL_COUNT}")
-                sys.stdout.flush()
-                
-                # Scroll to bottom with smooth behavior
-                driver.execute_script("""
-                    window.scrollTo({
-                        top: document.body.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                """)
-                
-                # Wait for initial scroll to complete
-                time.sleep(2)
-                
-                # Check for loading indicators and wait for them to disappear
-                loading_selectors = [
-                    '[data-testid*="loading"]',
-                    '.loading',
-                    '.spinner',
-                    '[aria-label*="Loading"]',
-                    '.skeleton',
-                    '[class*="loading"]',
-                    '[class*="spinner"]'
-                ]
-                
-                wait_time = base_wait
-                content_loaded = False
-                
-                # Dynamic waiting with multiple strategies
-                for attempt in range(3):
-                    print(f"   ⏳ Waiting for content... (attempt {attempt + 1}/3)")
-                    sys.stdout.flush()
-                    
-                    # Strategy 1: Wait for loading indicators to disappear
-                    try:
-                        for selector in loading_selectors:
-                            WebDriverWait(driver, 2).until_not(
-                                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                            )
-                    except TimeoutException:
-                        pass  # No loading indicators found or they didn't disappear
-                    
-                    # Strategy 2: Wait for network idle (no new requests for 2 seconds)
-                    try:
-                        driver.execute_script("""
-                            return new Promise((resolve) => {
-                                let requestCount = 0;
-                                let lastRequestTime = Date.now();
-                                
-                                const observer = new PerformanceObserver((list) => {
-                                    requestCount++;
-                                    lastRequestTime = Date.now();
-                                });
-                                observer.observe({entryTypes: ['resource']});
-                                
-                                const checkIdle = () => {
-                                    if (Date.now() - lastRequestTime > 2000) {
-                                        observer.disconnect();
-                                        resolve(true);
-                                    } else {
-                                        setTimeout(checkIdle, 500);
-                                    }
-                                };
-                                
-                                setTimeout(() => {
-                                    observer.disconnect();
-                                    resolve(false);
-                                }, 10000);
-                                
-                                checkIdle();
-                            });
-                        """)
-                        time.sleep(2)
-                    except:
-                        pass
-                    
-                    # Strategy 3: Check if page height changed
-                    current_height = driver.execute_script("return document.body.scrollHeight")
-                    if current_height > last_height:
-                        content_loaded = True
-                        break
-                    
-                    # Progressive wait time increase
-                    time.sleep(min(wait_time + (attempt * 5), max_wait))
-                
-                # Final height check
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                
-                if new_height > last_height:
-                    print(f"   ✅ New content loaded! Height: {last_height} → {new_height}")
-                    successful_scrolls += 1
-                    consecutive_no_change = 0
-                    last_height = new_height
-                else:
-                    consecutive_no_change += 1
-                    print(f"   ⚠️ No new content detected (attempt {consecutive_no_change}/3)")
-                    
-                    # Try alternative scroll methods if no content is loading
-                    if consecutive_no_change >= 2:
-                        print("   🔄 Trying alternative scroll methods...")
-                        
-                        # Method 1: Scroll by viewport height increments
-                        viewport_height = driver.execute_script("return window.innerHeight")
-                        for scroll_step in range(3):
-                            driver.execute_script(f"window.scrollBy(0, {viewport_height});")
-                            time.sleep(2)
-                        
-                        # Method 2: Trigger scroll events manually
-                        driver.execute_script("""
-                            window.dispatchEvent(new Event('scroll'));
-                            window.dispatchEvent(new Event('resize'));
-                        """)
-                        time.sleep(3)
-                        
-                        # Method 3: Focus on different elements to trigger lazy loading
-                        try:
-                            elements = driver.find_elements(By.CSS_SELECTOR, "div, article, section")
-                            if elements:
-                                random.choice(elements[-10:]).click()
-                                time.sleep(2)
-                        except:
-                            pass
-                        
-                        # Check again after alternative methods
-                        final_height = driver.execute_script("return document.body.scrollHeight")
-                        if final_height > new_height:
-                            print(f"   ✅ Alternative method worked! Height: {new_height} → {final_height}")
-                            successful_scrolls += 1
-                            consecutive_no_change = 0
-                            last_height = final_height
-                        
-                    # Break if no content for 3 consecutive attempts
-                    if consecutive_no_change >= 3:
-                        print("   ⏹️ No more content to load after multiple attempts.")
-                        break
-                
-                sys.stdout.flush()
-                
-            except Exception as e:
-                print(f"   ❌ Error during scroll {i + 1}: {str(e)}")
-                consecutive_no_change += 1
-                if consecutive_no_change >= 3:
-                    break
-                time.sleep(5)
+            time.sleep(10)
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            print(f"🌀 Scrolling... ({i + 1}/{SCROLL_COUNT})")
+            time.sleep(30)
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                print("⏹️ No more content to load.")
+                break
+            last_height = new_height
         
-        print(f"🏁 Scrolling completed! Successful scrolls: {successful_scrolls}/{scroll_count}")
-        sys.stdout.flush()
+    #     """
+    #     Enhanced scrolling function optimized for cloud environments
+        
+    #     Args:
+    #         driver: Selenium WebDriver instance
+    #         scroll_count: Maximum number of scrolls to perform
+    #         base_wait: Base wait time between scrolls
+    #         max_wait: Maximum wait time for content to load
+    #     """
+    #     base_wait=15
+    #     max_wait=45
+    #     print(f"🚀 Starting enhanced scrolling (max {SCROLL_COUNT} scrolls)")
+    #     sys.stdout.flush()
+        
+    #     last_height = driver.execute_script("return document.body.scrollHeight")
+    #     successful_scrolls = 0
+    #     consecutive_no_change = 0
+        
+    #     for i in range(SCROLL_COUNT):
+    #         try:
+    #             print(f"🌀 Scroll attempt {i + 1}/{SCROLL_COUNT}")
+    #             sys.stdout.flush()
+                
+    #             # Scroll to bottom with smooth behavior
+    #             driver.execute_script("""
+    #                 window.scrollTo({
+    #                     top: document.body.scrollHeight,
+    #                     behavior: 'smooth'
+    #                 });
+    #             """)
+                
+    #             # Wait for initial scroll to complete
+    #             time.sleep(2)
+                
+    #             # Check for loading indicators and wait for them to disappear
+    #             loading_selectors = [
+    #                 '[data-testid*="loading"]',
+    #                 '.loading',
+    #                 '.spinner',
+    #                 '[aria-label*="Loading"]',
+    #                 '.skeleton',
+    #                 '[class*="loading"]',
+    #                 '[class*="spinner"]'
+    #             ]
+                
+    #             wait_time = base_wait
+    #             content_loaded = False
+                
+    #             # Dynamic waiting with multiple strategies
+    #             for attempt in range(3):
+    #                 print(f"   ⏳ Waiting for content... (attempt {attempt + 1}/3)")
+    #                 sys.stdout.flush()
+                    
+    #                 # Strategy 1: Wait for loading indicators to disappear
+    #                 try:
+    #                     for selector in loading_selectors:
+    #                         WebDriverWait(driver, 2).until_not(
+    #                             EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+    #                         )
+    #                 except TimeoutException:
+    #                     pass  # No loading indicators found or they didn't disappear
+                    
+    #                 # Strategy 2: Wait for network idle (no new requests for 2 seconds)
+    #                 try:
+    #                     driver.execute_script("""
+    #                         return new Promise((resolve) => {
+    #                             let requestCount = 0;
+    #                             let lastRequestTime = Date.now();
+                                
+    #                             const observer = new PerformanceObserver((list) => {
+    #                                 requestCount++;
+    #                                 lastRequestTime = Date.now();
+    #                             });
+    #                             observer.observe({entryTypes: ['resource']});
+                                
+    #                             const checkIdle = () => {
+    #                                 if (Date.now() - lastRequestTime > 2000) {
+    #                                     observer.disconnect();
+    #                                     resolve(true);
+    #                                 } else {
+    #                                     setTimeout(checkIdle, 500);
+    #                                 }
+    #                             };
+                                
+    #                             setTimeout(() => {
+    #                                 observer.disconnect();
+    #                                 resolve(false);
+    #                             }, 10000);
+                                
+    #                             checkIdle();
+    #                         });
+    #                     """)
+    #                     time.sleep(2)
+    #                 except:
+    #                     pass
+                    
+    #                 # Strategy 3: Check if page height changed
+    #                 current_height = driver.execute_script("return document.body.scrollHeight")
+    #                 if current_height > last_height:
+    #                     content_loaded = True
+    #                     break
+                    
+    #                 # Progressive wait time increase
+    #                 time.sleep(min(wait_time + (attempt * 5), max_wait))
+                
+    #             # Final height check
+    #             new_height = driver.execute_script("return document.body.scrollHeight")
+                
+    #             if new_height > last_height:
+    #                 print(f"   ✅ New content loaded! Height: {last_height} → {new_height}")
+    #                 successful_scrolls += 1
+    #                 consecutive_no_change = 0
+    #                 last_height = new_height
+    #             else:
+    #                 consecutive_no_change += 1
+    #                 print(f"   ⚠️ No new content detected (attempt {consecutive_no_change}/3)")
+                    
+    #                 # Try alternative scroll methods if no content is loading
+    #                 if consecutive_no_change >= 2:
+    #                     print("   🔄 Trying alternative scroll methods...")
+                        
+    #                     # Method 1: Scroll by viewport height increments
+    #                     viewport_height = driver.execute_script("return window.innerHeight")
+    #                     for scroll_step in range(3):
+    #                         driver.execute_script(f"window.scrollBy(0, {viewport_height});")
+    #                         time.sleep(2)
+                        
+    #                     # Method 2: Trigger scroll events manually
+    #                     driver.execute_script("""
+    #                         window.dispatchEvent(new Event('scroll'));
+    #                         window.dispatchEvent(new Event('resize'));
+    #                     """)
+    #                     time.sleep(3)
+                        
+    #                     # Method 3: Focus on different elements to trigger lazy loading
+    #                     try:
+    #                         elements = driver.find_elements(By.CSS_SELECTOR, "div, article, section")
+    #                         if elements:
+    #                             random.choice(elements[-10:]).click()
+    #                             time.sleep(2)
+    #                     except:
+    #                         pass
+                        
+    #                     # Check again after alternative methods
+    #                     final_height = driver.execute_script("return document.body.scrollHeight")
+    #                     if final_height > new_height:
+    #                         print(f"   ✅ Alternative method worked! Height: {new_height} → {final_height}")
+    #                         successful_scrolls += 1
+    #                         consecutive_no_change = 0
+    #                         last_height = final_height
+                        
+    #                 # Break if no content for 3 consecutive attempts
+    #                 if consecutive_no_change >= 3:
+    #                     print("   ⏹️ No more content to load after multiple attempts.")
+    #                     break
+                
+    #             sys.stdout.flush()
+                
+    #         except Exception as e:
+    #             print(f"   ❌ Error during scroll {i + 1}: {str(e)}")
+    #             consecutive_no_change += 1
+    #             if consecutive_no_change >= 3:
+    #                 break
+    #             time.sleep(5)
+        
+    #     print(f"🏁 Scrolling completed! Successful scrolls: {successful_scrolls}/{scroll_count}")
+    #     sys.stdout.flush()
 
-    def normalize_facebook_url(url: str) -> str:
-        if "pfbid" in url and "_rdr" not in url:
-            if "?" in url:
-                return url + "&_rdr"
-            else:
-                return url + "?_rdr"
-        return url
+    # def normalize_facebook_url(url: str) -> str:
+    #     if "pfbid" in url and "_rdr" not in url:
+    #         if "?" in url:
+    #             return url + "&_rdr"
+    #         else:
+    #             return url + "?_rdr"
+    #     return url
 
 
 
