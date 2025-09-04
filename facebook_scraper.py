@@ -239,7 +239,7 @@ def run_facebook_scraper(value,scroll):
                 try:
                     service = Service(ChromeDriverManager().install())
                     driver = webdriver.Chrome(service=service, options=options)
-                    driver.get("https://www.instagram.com")
+                    driver.get("https://www.facebook.com")
                     time.sleep(3)
                     return driver
                 except Exception as e2:
@@ -669,7 +669,7 @@ def run_facebook_scraper(value,scroll):
     import os
     driver,session=start_driver(headless=True)
     sys.stdout.flush() 
-    #driver.get("https://www.facebook.com")
+    driver.get("https://www.facebook.com")
     load_cookies_into_browser(driver,"facebook")
     sys.stdout.flush() 
     # check_login_status(driver)
@@ -683,16 +683,16 @@ def run_facebook_scraper(value,scroll):
 
     #time.sleep(10)
     #check_and_handle_login_popup(driver, EMAIL, PASSWORD)
-    #time.sleep(10)
+    time.sleep(10)
     
 
     scroll_page()
-    try:
-        cookie_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Allow essential and optional cookies")]')
-        cookie_btn.click()
-        print("✅ Cookie banner dismissed")
-    except:
-        pass
+    # try:
+    #     cookie_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Allow essential and optional cookies")]')
+    #     cookie_btn.click()
+    #     print("✅ Cookie banner dismissed")
+    # except:
+    #     pass
 
 
 
@@ -706,6 +706,7 @@ def run_facebook_scraper(value,scroll):
         try:
             print(f"🔗 Opening post: {url}")
             driver.get(normalize_facebook_url(url))
+            sys.stdout.flush() 
             time.sleep(10)
             try:
                 # Try multiple patterns until one works
@@ -757,7 +758,7 @@ def run_facebook_scraper(value,scroll):
                 # Safer click via JS
                 driver.execute_script("arguments[0].click();", about_btn)
                 print("✅ Clicked on About tab.")
-
+                sys.stdout.flush() 
                 time.sleep(5)
                 driver.execute_script("document.body.style.zoom='50%'")
                 time.sleep(5)
@@ -801,6 +802,7 @@ def run_facebook_scraper(value,scroll):
             time.sleep(5)
             print(f"✅ {name} | {email} | {contact}")
             results.append([name, url, contact, email])
+            sys.stdout.flush() 
             driver.get("https://web.facebook.com/")
             time.sleep(8)  # Let homepage load
         except Exception as e:
