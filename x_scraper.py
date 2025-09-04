@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
+import sys
 import os
 
 
@@ -308,53 +309,43 @@ def create_isolated_browser(user_profile_dir, headless, session_id):
     options = Options()
     if headless:
         options.add_argument("--headless=new")
-    
-    # Essential Chrome options for Railway
-    # Use this for Railway instead:
-   # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
+        
+    # Railway-optimized options
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-extensions")
-    options.add_argument("--disable-plugins")
     options.add_argument("--disable-web-security")
-    options.add_argument("--allow-running-insecure-content")
-    options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument("--disable-features=VizDisplayCompositor")
+    
+    # Network optimization for Railway
+    options.add_argument("--disable-background-timer-throttling")
+    options.add_argument("--disable-background-networking")
+    options.add_argument("--disable-default-apps")
+    options.add_argument("--no-first-run")
     
     # Use user's isolated profile
     options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
     options.add_argument("--profile-directory=Default")
     
-    # Set Chrome binary location for Railway
+    # Set Chrome binary for Railway
     options.binary_location = "/usr/bin/google-chrome-stable"
     
     try:
-        # For Railway/Linux - use the installed ChromeDriver
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=options)
         
-        print(f"🌐 Navigating to Instagram with session {session_id}...")
-        driver.get("https://x.com/login")
+        # Fix: Navigate to X/Twitter, not Instagram
+        print(f"🌐 Navigating to X/Twitter with session {session_id}...")
+        driver.get("https://x.com")
         time.sleep(3)
         return driver
         
     except Exception as e:
         print(f"❌ Failed to create driver: {e}")
-        # Fallback to webdriver_manager for local development
-        try:
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=options)
-            driver.get("https://x.com/login")
-            time.sleep(3)
-            return driver
-        except Exception as e2:
-            print(f"❌ Fallback also failed: {e2}")
-            raise e2
-
+        raise e
 
 def check_login_status(driver):
     try:
@@ -443,71 +434,69 @@ def get_session_info(driver, session_id):
 
 from urllib.parse import urljoin
 
-def scroll_and_collect(driver, scroll_times=None, max_wait=3):
-    collected = []
-    tweet_ids_seen = set()
+def collect_tweet_urls(driver, max_scrolls=5):
+    """
+    Improved tweet URL collection with better scroll detection
+    """
+    print("🔁 Scrolling to collect tweet URLs...")
+    tweet_urls = set()
+    processed_tweet_ids = set()
+    
+    last_height = driver.execute_script("return document.body.scrollHeight")
     scroll_count = 0
     stagnant_scrolls = 0
-    last_height = driver.execute_script("return document.body.scrollHeight")
-
-    while True:
-        tweets = driver.find_elements(By.XPATH, '//article[@data-testid="tweet"]')
-
-        for tweet in tweets:
+    
+    while scroll_count < max_scrolls:
+        # Shorter initial wait
+        time.sleep(2)
+        
+        # Collect current tweets before scrolling
+        tweet_elements = driver.find_elements(By.XPATH, '//a[contains(@href, "/status/")]')
+        
+        for tweet in tweet_elements:
             try:
-                tweet_html = tweet.get_attribute('outerHTML')
-                soup = BeautifulSoup(tweet_html, 'html.parser')
-
-                # Extract tweet text
-                tweet_text_tag = soup.find('div', {'data-testid': 'tweetText'})
-                tweet_text = tweet_text_tag.get_text(separator=' ').strip() if tweet_text_tag else ""
-
-                # Extract email
-                emails = extract_emails(tweet_text)
-                email = emails[0] if emails else "Not Available"
-
-                # Extract author name
-                name_tag = soup.find('div', {'dir': 'auto'})
-                name = name_tag.text.strip() if name_tag else "Unknown"
-
-                # Get tweet URL from "a" tag with "href" containing "/status/"
-                tweet_link_tag = soup.find('a', href=re.compile(r'/status/\d+'))
-                tweet_path = tweet_link_tag['href'] if tweet_link_tag else ""
-                tweet_url = urljoin("https://x.com", tweet_path) if tweet_path else "Unavailable"
-
-                tweet_id = tweet_path.split("/")[-1] if tweet_path else None
-                if tweet_id and tweet_id not in tweet_ids_seen:
-                    tweet_ids_seen.add(tweet_id)
-                    collected.append({
-                        "Name": name,
-                        "Tweet URL": tweet_url,
-                        "Email": email,
-                        "Tweet Text": tweet_text
-                    })
-
-            except Exception as e:
-                print("⚠️ Skipping tweet due to error:", e)
-
-        # Scroll and wait
+                href = tweet.get_attribute("href")
+                if href and "/status/" in href:
+                    # Clean the URL
+                    href = href.split("?")[0].rstrip('/')
+                    if href.endswith(("/analytics", "/media_tags", "/photo/1")):
+                        href = re.sub(r"/(analytics|media_tags|photo/\d+)$", "", href)
+                    
+                    # Extract tweet ID for deduplication
+                    tweet_id = href.split("/status/")[-1].split("/")[0]
+                    
+                    if tweet_id not in processed_tweet_ids and tweet_id.isdigit():
+                        tweet_urls.add(href)
+                        processed_tweet_ids.add(tweet_id)
+                        
+            except Exception:
+                continue
+        
+        print(f"🔄 Scroll {scroll_count + 1}/{max_scrolls} - Found {len(tweet_urls)} URLs so far")
+        
+        # Scroll to bottom
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3 + (scroll_count % 3))  # wait 3-5 sec
-        time.sleep(15)
-
-        # Scroll check
+        
+        # Wait for content to load
+        time.sleep(3)
+        
+        # Check if new content loaded
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             stagnant_scrolls += 1
-            if stagnant_scrolls >= max_wait:
+            print(f"⚠️ No new content loaded (attempt {stagnant_scrolls})")
+            if stagnant_scrolls >= 2:  # Stop if no new content for 2 scrolls
+                print("🛑 No more content available")
                 break
         else:
             stagnant_scrolls = 0
             last_height = new_height
-
+        
         scroll_count += 1
-        if scroll_times is not None and scroll_count >= scroll_times:
-            break
+    
+    print(f"✅ Collected {len(tweet_urls)} unique tweet URLs from {len(processed_tweet_ids)} tweets")
+    return list(tweet_urls)
 
-    return collected
 
 
 
@@ -695,39 +684,75 @@ import os
 
 
 def scrape_hashtag(hashtag,scroll):
-    import time
+    """
+    Improved hashtag scraping with better error handling
+    """
     print(f"📌 Scraping hashtag: #{hashtag}")
-    driver,session = start_driver(headless=True)
-    #driver.get("https://x.com/login")
-    # if not check_login_status(driver):
-    #     print("Authentication failed - profile didn't work on Railway")
-    #     driver.quit()
-    #     cleanup_user_session(session)
-    #     raise Exception("Authentication required - please log in manually")
-    load_cookies_into_browser(driver,"x")
     
-    time.sleep(10)
-    import time
-    import os
+    try:
+        driver, session = start_driver(headless=True)
+        sys.stdout.flush()
+        # Fix: Load X cookies, not navigate to Instagram
+        print("🔄 Loading X/Twitter cookies...")
+        if not load_cookies_into_browser(driver, "x"):
+            print("❌ Failed to load cookies - authentication may fail")
+        sys.stdout.flush()
+        
+        # Navigate to hashtag search
+        search_url = f"https://x.com/search?q=%23{hashtag}&src=typed_query&f=live"
+        print(f"🌐 Navigating to: {search_url}")
+        driver.get(search_url)
+        time.sleep(5)
+        sys.stdout.flush()
+        
+        # Check if we're redirected to login
+        if "login" in driver.current_url.lower():
+            print("❌ Redirected to login - authentication failed")
+            driver.quit()
+            cleanup_user_session(session)
+            return []
+        
+        # Collect tweet URLs with improved method
+        tweet_urls = collect_tweet_urls(driver,scroll)
+        sys.stdout.flush()
+        if not tweet_urls:
+            print("⚠️ No tweet URLs found - check authentication or hashtag")
+            driver.quit()
+            cleanup_user_session(session)
+            return []
+        sys.stdout.flush()
+        print(f"✅ Found {len(tweet_urls)} tweet URLs")
+        sys.stdout.flush()
+        
+        # Extract user info from each tweet
+        results = []
+        for i, url in enumerate(tweet_urls, 1):
+            print(f"🔍 Processing tweet {i}/{len(tweet_urls)}: {url}")
+            
+            try:
+                info = extract_user_info_from_tweet(driver, url)
+                results.append(info)
+                
+                # Shorter wait between requests
+                time.sleep(5)  # Reduced from 15 seconds
+                sys.stdout.flush()
+            except Exception as e:
+                print(f"⚠️ Failed to process {url}: {e}")
+                continue
+        
+        driver.quit()
+        cleanup_user_session(session)
+        return results
+        
+    except Exception as e:
+        print(f"❌ Scraping failed: {e}")
+        try:
+            driver.quit()
+            cleanup_user_session(session)
+        except:
+            pass
+        return []
 
-    driver.get(f"https://x.com/search?q=%23{hashtag}&src=typed_query")
-    time.sleep(5)
-
-    print("🔁 Collecting tweet URLs...")
-    tweet_urls = collect_tweet_urls(driver, scroll_times=scroll)
-    print(f"✅ Found {len(tweet_urls)} tweet URLs.")
-
-    results = []
-    for url in tweet_urls:
-
-        print(f"🔍 Extracting from: {url}")
-        info = extract_user_info_from_tweet(driver, url)
-        results.append(info)
-        time.sleep(15)
-
-    driver.quit()
-    cleanup_user_session(session)
-    return results
 def run_x_scraper(tag,scroll):
     print(f"Environment check:")
     print(f"- Chrome binary exists: {os.path.exists('/usr/bin/google-chrome')}")
@@ -743,4 +768,5 @@ def run_x_scraper(tag,scroll):
 
     filename=save_to_csv(emails)
     print("✅ Done.")
+    sys.stdout.flush()
     return filename
