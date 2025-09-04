@@ -1083,6 +1083,9 @@ def scroll_page_facebook_enhanced(driver, scroll_count, timeout_per_scroll=120):
             print(f"📊 After additional wait: {initial_posts} posts")
             scroll_page_facebook_enhanced(driver, SCROLL-COUNT)
             sys.stdout.flush() 
+    except Exception as e:
+        print(f"❌ Error during scrolling: {e}")
+        print("🔄 Continuing with available posts...")
     
     # try:
     #     cookie_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Allow essential and optional cookies")]')
