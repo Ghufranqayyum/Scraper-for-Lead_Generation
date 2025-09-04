@@ -14,7 +14,7 @@ from email import encoders
 import uuid
 import time
 import traceback
-
+import sys
 # Import scraper functions
 from facebook_scraper import run_facebook_scraper
 from instagram_scraper import run_instagram_scraper
@@ -260,19 +260,23 @@ def send_email():
 def send_email_smtp(user_id, sender_email, sender_password, recipient_email, smtp_server, smtp_port):
     """Send email with user-specific data"""
     try:
+        # Debug logging
+        print(f"Attempting to send email from {sender_email} to {recipient_email}")
+        print(f"Using SMTP server: {smtp_server}:{smtp_port}")
+        
         # Get user status at time of sending
         with sessions_lock:
             if user_id not in user_sessions:
                 print(f"User session {user_id} not found for email sending")
                 return
             user_status = user_sessions[user_id].copy()
-
+        
         # Create message
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = f"Scraped Data from {user_status['platform'].title()}"
-
+        
         # Email body
         body = f"""Hello,
 
@@ -288,43 +292,62 @@ Scraping Details:
 Best regards,
 Multi-Platform Scraper Tool
 """
-
         msg.attach(MIMEText(body, 'plain'))
-
+        
         # Attach CSV file
         if user_status['csv_file'] and os.path.exists(user_status['csv_file']):
+            print(f"Attaching file: {user_status['csv_file']}")
             with open(user_status['csv_file'], "rb") as attachment:
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(attachment.read())
-
             encoders.encode_base64(part)
             part.add_header(
                 'Content-Disposition',
                 f'attachment; filename= {os.path.basename(user_status["csv_file"])}'
             )
             msg.attach(part)
-
-        # Send email
-        # In send_email_smtp function:
+        else:
+            print("No CSV file to attach")
+        
+        # Connect and send email
+        print(f"Connecting to SMTP server...")
+        
         if smtp_port == 465:
             # Use SSL
             server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-            # No need for starttls() with SSL
         else:
-            # Use TLS (original approach)
+            # Use TLS
             server = smtplib.SMTP(smtp_server, smtp_port)
             server.starttls()
+        
+        print("Logging in...")
         server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, msg.as_string())
+        
+        print("Sending email...")
+        text = msg.as_string()
+        server.sendmail(sender_email, recipient_email, text)
         server.quit()
-
+        
         print(f"Email sent successfully for user {user_id}")
-
+        sys.stdout.flush()
+        return True
+        
     except smtplib.SMTPAuthenticationError as e:
         print(f"Authentication Error for user {user_id}: {str(e)}")
+        sys.stdout.flush()
+        return False
+    except smtplib.SMTPRecipientsRefused as e:
+        print(f"Recipients Refused for user {user_id}: {str(e)}")
+        sys.stdout.flush()
+        return False
+    except smtplib.SMTPServerDisconnected as e:
+        print(f"Server Disconnected for user {user_id}: {str(e)}")
+        sys.stdout.flush()
+        return False
     except Exception as e:
         print(f"Email Error for user {user_id}: {str(e)}")
-
+        sys.stdout.flush()
+        return False
 
 @app.route('/reset_session', methods=['POST'])
 def reset_session():
