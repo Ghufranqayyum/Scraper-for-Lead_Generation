@@ -184,57 +184,93 @@ def run_facebook_scraper(value,scroll):
         return driver,session
     
     def create_isolated_browser(user_profile_dir, headless, session_id):
-            options = Options()
-            if headless:
-                options.add_argument("--headless=new")
+        options = Options()
+        if headless:
+            options.add_argument("--headless=new")
+        
+        # Essential Chrome options for Railway
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        
+        # CRITICAL: Remove these lines that break JavaScript execution
+        # options.add_argument("--disable-extensions")  # REMOVED - can break JS
+        # options.add_argument("--disable-plugins")     # REMOVED - can break JS
+        # options.add_argument("--disable-web-security") # REMOVED - breaks modern web apps
+        # options.add_argument("--disable-features=VizDisplayCompositor") # REMOVED
+        
+        # Keep these for anti-detection
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        
+        # CRITICAL: Enable JavaScript properly
+        options.add_argument("--enable-javascript")
+        options.add_argument("--enable-automation")  # Needed for proper JS execution
+        
+        # Allow Facebook's features to work
+        options.add_argument("--allow-running-insecure-content")
+        
+        # Better performance for JavaScript-heavy sites
+        options.add_argument("--max_old_space_size=4096")
+        options.add_argument("--disable-background-timer-throttling")
+        options.add_argument("--disable-backgrounding-occluded-windows")
+        options.add_argument("--disable-renderer-backgrounding")
+        
+        # Set proper user agent
+       # options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebDriver/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        
+        # Use user's isolated profile
+        options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
+        options.add_argument("--profile-directory=Default")
+        
+        # Set Chrome binary location for Railway
+        options.binary_location = "/usr/bin/google-chrome-stable"
+        
+        try:
+            # For Railway/Linux - use the installed ChromeDriver
+            service = Service("/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=service, options=options)
             
-            # Essential Chrome options for Railway
-            # Use this for Railway instead:
-           # options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.154 Safari/537.36")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--disable-gpu")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-plugins")
-            options.add_argument("--disable-web-security")
-            options.add_argument("--allow-running-insecure-content")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option('useAutomationExtension', False)
-            options.add_argument("--disable-features=VizDisplayCompositor")
+            # CRITICAL: Set proper timeouts for JavaScript execution
+            driver.set_page_load_timeout(120)  # 2 minutes for initial load
+            driver.implicitly_wait(10)         # 10 seconds for element finding
             
-            # Use user's isolated profile
-            options.add_argument(f"--user-data-dir={os.path.abspath(user_profile_dir)}")
-            options.add_argument("--profile-directory=Default")
+            # Set window size (helps with lazy loading detection)
+            driver.set_window_size(1920, 1080)
             
-            # Set Chrome binary location for Railway
-            options.binary_location = "/usr/bin/google-chrome-stable"
+            print(f"🌐 Navigating to facebook with session {session_id}...")
+            driver.get("https://www.facebook.com")
             
+            # Wait for Facebook's JavaScript to initialize
+            time.sleep(10)
+            
+            # Test if JavaScript is working
             try:
-                # For Railway/Linux - use the installed ChromeDriver
-                service = Service("/usr/bin/chromedriver")
-                driver = webdriver.Chrome(service=service, options=options)
-                
-                print(f"🌐 Navigating to facebook with session {session_id}...")
-                driver.get("https://www.facebook.com")
-                time.sleep(3)
-                sys.stdout.flush() 
-                return driver
-                
+                js_test = driver.execute_script("return typeof window.jQuery !== 'undefined' || typeof window.React !== 'undefined' || document.readyState === 'complete';")
+                print(f"✅ JavaScript execution test: {js_test}")
             except Exception as e:
-                print(f"❌ Failed to create driver: {e}")
-                # Fallback to webdriver_manager for local development
-                try:
-                    service = Service(ChromeDriverManager().install())
-                    driver = webdriver.Chrome(service=service, options=options)
-                    driver.get("https://x.com/login")
-                    time.sleep(3)
-                    return driver
-                except Exception as e2:
-                    print(f"❌ Fallback also failed: {e2}")
-                    raise e2
-
+                print(f"⚠️ JavaScript test failed: {e}")
+            
+            sys.stdout.flush() 
+            return driver
+            
+        except Exception as e:
+            print(f"❌ Failed to create driver: {e}")
+            # Fallback to webdriver_manager for local development
+            try:
+                service = Service(ChromeDriverManager().install())
+                driver = webdriver.Chrome(service=service, options=options)
+                driver.set_page_load_timeout(120)
+                driver.implicitly_wait(10)
+                driver.set_window_size(1920, 1080)
+                driver.get("https://www.facebook.com")
+                time.sleep(10)
+                return driver
+            except Exception as e2:
+                print(f"❌ Fallback also failed: {e2}")
+                raise e2
+    
 
     def check_login_status(driver):
         """
@@ -372,47 +408,66 @@ def run_facebook_scraper(value,scroll):
     #     time.sleep(5)
     def scroll_page():
         """
-        Simple Facebook scrolling - completes all scrolls with 10 second intervals
-        Optimized for cloud environments like Railway
+        Simple Facebook scrolling with verification
         """
         print(f"Starting Facebook scrolling ({SCROLL_COUNT} scrolls)")
-        sys.stdout.flush()
         
-        # Wait for initial page load
-        time.sleep(5)
+        # Check initial state
+        initial_height = driver.execute_script("return document.body.scrollHeight")
+        initial_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"], div[data-pagelet*="FeedUnit"]'))
+        print(f"Initial: height={initial_height}, posts={initial_posts}")
+        
+        # Wait for page to stabilize
+        time.sleep(8)
         
         for i in range(SCROLL_COUNT):
             try:
-                # Multi-method scroll approach for better reliability
+                print(f"Scroll {i+1}/{SCROLL_COUNT}")
                 
-                # Method 1: Scroll to bottom
+                # Get current state
+                current_height = driver.execute_script("return document.body.scrollHeight")
+                
+                # Scroll using multiple methods
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(2)
                 
-                # Method 2: Backup scroll (sometimes Facebook needs this)
+                # Alternative scroll method
                 driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
                 time.sleep(2)
                 
-                # Method 3: Trigger scroll event (helps with lazy loading)
-                driver.execute_script("window.dispatchEvent(new Event('scroll'));")
+                # Trigger scroll events to activate lazy loading
+                driver.execute_script("""
+                    window.dispatchEvent(new Event('scroll'));
+                    window.dispatchEvent(new Event('resize'));
+                """)
                 
-                print(f"Scroll {i+1}/{SCROLL_COUNT} completed")
+                # Wait for content to load
+                time.sleep(10)
+                
+                # Check if height changed
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                new_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"], div[data-pagelet*="FeedUnit"]'))
+                
+                if new_height > current_height:
+                    print(f"  ✅ Height increased: {current_height} → {new_height}, Posts: {new_posts}")
+                else:
+                    print(f"  ⚠️ Height unchanged: {current_height}, Posts: {new_posts}")
+                
                 sys.stdout.flush()
-                
-                # Wait between scrolls (except for last one)
-                if i < SCROLL_COUNT - 1:
-                    time.sleep(10)
                     
             except Exception as e:
                 print(f"Scroll {i+1} failed: {str(e)}")
-                # Continue with next scroll even if one fails
-                if i < SCROLL_COUNT - 1:
-                    time.sleep(10)
+                time.sleep(5)  # Brief pause before continuing
         
-        print(f"Scrolling completed - all {SCROLL_COUNT} scrolls done")
+        final_height = driver.execute_script("return document.body.scrollHeight")
+        final_posts = len(driver.find_elements(By.CSS_SELECTOR, 'div[role="article"], div[data-pagelet*="FeedUnit"]'))
+        
+        print(f"Scrolling completed!")
+        print(f"Final: height={final_height} (+{final_height-initial_height}), posts={final_posts} (+{final_posts-initial_posts})")
         sys.stdout.flush()
+        
         return SCROLL_COUNT
-    
+        
     def normalize_facebook_url(url: str) -> str:
         """Add the _rdr parameter if needed"""
         if "pfbid" in url and "_rdr" not in url:
